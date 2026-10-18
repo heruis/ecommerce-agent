@@ -1,0 +1,44 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+/test-results/
+/playwright-report/
+/blob-report/
+
+# next.js
+/.next/
+/out/
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+.pnpm-debug.log*
+
+# env files: only the template is committed
+.env*
+!.env.example
+
+# vercel / supabase local state
+.vercel
+supabase/.temp/
+supabase/.branches/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# evals: results are local artifacts (commit a summary in docs if needed)
+evals/results/*
+!evals/results/.gitkeep
+
+# Claude Code personal layer (team layer in .claude/ is committed)
+.claude/settings.local.json
+CLAUDE.local.md

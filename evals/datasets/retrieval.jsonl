@@ -1,0 +1,15 @@
+{"query":"FDA approved silicone cup claim","relevant":["fda-approval-claims"]}
+{"query":"is FDA registration the same as approval","relevant":["fda-approval-claims"]}
+{"query":"antibacterial cutting board claim","relevant":["epa-pesticide-claims"]}
+{"query":"kills 99.9% of germs","relevant":["epa-pesticide-claims"]}
+{"query":"#1 best seller in America","relevant":["comparative-superlative-claims","amazon-title-requirements"]}
+{"query":"best quality superlative","relevant":["comparative-superlative-claims"]}
+{"query":"eco-friendly product claim","relevant":["ftc-green-guides"]}
+{"query":"biodegradable compostable packaging","relevant":["ftc-green-guides"]}
+{"query":"made in USA imported product","relevant":["ftc-made-in-usa"]}
+{"query":"100% safe absolute promise","relevant":["amazon-prohibited-claims","ftc-substantiation"]}
+{"query":"non-toxic claim evidence","relevant":["ftc-substantiation"]}
+{"query":"cures disease treatment claim","relevant":["amazon-prohibited-claims"]}
+{"query":"title character limit special characters","relevant":["amazon-title-requirements"]}
+{"query":"backend search terms byte limit","relevant":["amazon-search-terms"]}
+{"query":"contact information links in bullet points","relevant":["amazon-detail-page-content"]}

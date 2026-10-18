@@ -1,0 +1,21 @@
+name: Bug
+description: Something is broken
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Steps, expected vs actual. Include the run id / trace link if it is a pipeline bug.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Mode
+      options: [mock, live AI, supabase, stripe, production]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Never paste API keys or .env contents.

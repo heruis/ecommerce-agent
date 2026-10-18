@@ -1,0 +1,32 @@
+# Review routing. Replace the placeholders with GitHub usernames, then uncomment.
+# Ownership of folders is defined in ownership.json; keep the two in sync.
+
+*                                   @heruis
+
+# WS1 — AI pipeline
+# /src/lib/agents/extraction/       @WS1_GITHUB_USERNAME
+# /src/lib/agents/keywords/         @WS1_GITHUB_USERNAME
+# /src/lib/agents/localization/     @WS1_GITHUB_USERNAME
+# /src/lib/pipeline/                @WS1_GITHUB_USERNAME
+
+# WS2 — Trust layer
+# /src/lib/agents/compliance/       @WS2_GITHUB_USERNAME
+# /src/lib/guardrails/              @WS2_GITHUB_USERNAME
+# /src/lib/rag/                     @WS2_GITHUB_USERNAME
+# /knowledge/                       @WS2_GITHUB_USERNAME
+# /evals/                           @WS2_GITHUB_USERNAME
+
+# WS3 — UI
+# /src/components/                  @WS3_GITHUB_USERNAME
+# /src/app/(app)/                   @WS3_GITHUB_USERNAME
+# /e2e/                             @WS3_GITHUB_USERNAME
+
+# WS4 — Platform
+# /supabase/                        @WS4_GITHUB_USERNAME
+# /src/lib/db/                      @WS4_GITHUB_USERNAME
+# /src/lib/billing/                 @WS4_GITHUB_USERNAME
+# /src/lib/auth/                    @WS4_GITHUB_USERNAME
+
+# Contracts and harness: lead only
+/src/lib/contracts/                 @heruis
+/src/lib/harness/                   @heruis

@@ -1,0 +1,11 @@
+import type { BillingProvider } from "@/lib/contracts";
+import { env } from "@/lib/env";
+import { MockBilling } from "./mock";
+import { StripeBilling } from "./stripe";
+
+export function getBilling(): BillingProvider {
+  return env().BILLING_MODE === "stripe" ? new StripeBilling() : new MockBilling();
+}
+
+export { plans } from "./plans";
+export { applyStripeEvent, type WebhookOutcome } from "./webhook";

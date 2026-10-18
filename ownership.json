@@ -1,0 +1,83 @@
+{
+  "$comment": "Who may edit what. Read by .claude/hooks/guard-ownership.mjs (blocks Claude Code edits outside your area) and scripts/check-ownership.mjs (CI check on pull requests). Branch prefix decides the workstream. To change a file you do not own, open a small contract/* or chore/* PR to main, or ask the owner. See docs/team/TEAM_GUIDE.md.",
+  "shared": ["docs/team/status/**", "memory/lessons-learned.md", "evals/results/**"],
+  "workstreams": {
+    "lead": {
+      "name": "Lead / integration (main)",
+      "branch_prefixes": ["main", "contract/", "chore/", "docs/", "release/"],
+      "owns": ["**"]
+    },
+    "ws1": {
+      "name": "WS1 — AI pipeline (extraction, keywords, localization, orchestration)",
+      "branch_prefixes": ["ws1/"],
+      "owns": [
+        "src/lib/agents/extraction/**",
+        "src/lib/agents/keywords/**",
+        "src/lib/agents/localization/**",
+        "src/lib/agents/shared/**",
+        "src/lib/pipeline/**",
+        "evals/datasets/ws1-*.jsonl",
+        "docs/report/sections/ws1-*.md",
+        "docs/team/status/ws1.md"
+      ]
+    },
+    "ws2": {
+      "name": "WS2 — Trust layer (compliance agent, RAG, guardrails, rules, scoring, evals)",
+      "branch_prefixes": ["ws2/"],
+      "owns": [
+        "src/lib/agents/compliance/**",
+        "src/lib/agents/judge/**",
+        "src/lib/guardrails/**",
+        "src/lib/rules/**",
+        "src/lib/scoring/**",
+        "src/lib/rag/**",
+        "knowledge/**",
+        "evals/**",
+        "scripts/ingest-kb.ts",
+        "docs/report/sections/ws2-*.md",
+        "docs/team/status/ws2.md"
+      ]
+    },
+    "ws3": {
+      "name": "WS3 — Product UI (pages, components, export, e2e)",
+      "branch_prefixes": ["ws3/"],
+      "owns": [
+        "src/app/(marketing)/**",
+        "src/app/(app)/**",
+        "src/app/layout.tsx",
+        "src/app/globals.css",
+        "src/app/favicon.ico",
+        "src/components/**",
+        "src/lib/export/**",
+        "src/lib/i18n/**",
+        "public/**",
+        "e2e/**",
+        "docs/report/sections/ws3-*.md",
+        "docs/team/status/ws3.md"
+      ],
+      "except": ["src/components/auth/**"]
+    },
+    "ws4": {
+      "name": "WS4 — Platform (auth, database, payments, deployment)",
+      "branch_prefixes": ["ws4/"],
+      "owns": [
+        "src/app/(auth)/**",
+        "src/app/auth/**",
+        "src/app/api/auth/**",
+        "src/app/api/billing/**",
+        "src/app/api/stripe/**",
+        "src/proxy.ts",
+        "src/lib/auth/**",
+        "src/lib/db/**",
+        "src/lib/billing/**",
+        "src/lib/platform/**",
+        "src/components/auth/**",
+        "supabase/**",
+        "scripts/doctor.ts",
+        "vercel.json",
+        "docs/report/sections/ws4-*.md",
+        "docs/team/status/ws4.md"
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+name: Task
+description: A unit of work from a workstream brief
+labels: [task]
+body:
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: Workstream
+      options: [WS1 AI pipeline, WS2 Trust layer, WS3 UI, WS4 Platform, Lead]
+    validations:
+      required: true
+  - type: input
+    id: brief
+    attributes:
+      label: Brief task id
+      placeholder: e.g. WS2-T3
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this is done?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ]
+        - [ ] `pnpm check` passes
+    validations:
+      required: true
+  - type: textarea
+    id: deps
+    attributes:
+      label: Depends on / blocks
