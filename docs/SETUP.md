@@ -37,22 +37,22 @@ cp .env.example .env.local        # Windows PowerShell: Copy-Item .env.example .
 pnpm dev
 ```
 
-Open http://localhost:3000 → **Sign in** with any email (demo mode) → **New listing** → **Example: Collapsible silicone cup** → **Generate listing**. You should see the pipeline stream, a compliance table and a score around 85.
+Open http://localhost:3000 → **Sign in** with any email (demo mode) → **New listing** → **Example: Collapsible silicone cup** (all three channels are ticked; add a photo if you like) → **Generate report**. You should see the pipeline stream (three localization agents run side by side), then keywords, facts, one tab per channel (Amazon US, TikTok Shop US, Shopify) with its publish fields and a score around 80–85, and a shared claim review. Mock mode cannot see photos; it says so in the photo card.
 
 Then check that everything is healthy:
 
 ```bash
 pnpm check        # lint + typecheck + unit tests
-pnpm eval         # 12/12 golden cases in mock mode
+pnpm eval         # 13/13 golden cases in mock mode
 pnpm check:env    # shows which modes are on
 ```
 
 ## §3 Supabase — database and auth (lead creates, WS4 wires)
 
-1. https://supabase.com → **New project**. Name `listwise`, region close to your users (e.g. _West US_), save the DB password in your password manager.
+1. https://supabase.com → **New project**. Name `shelfpass`, region close to your users (e.g. _West US_), save the DB password in your password manager.
 2. **Project Settings → API Keys**: copy the **Project URL**, the **publishable** key and the **secret** key (legacy `anon` / `service_role` keys also work in the same slots).
 3. **SQL Editor → New query**: paste `supabase/migrations/20261018000000_init.sql` → **Run**. Every table should appear under **Table Editor**.
-4. **Authentication → Sign In / Providers → Email**: enabled. For development you can turn **Confirm email** off; for the demo turn it on.
+4. **Authentication → Sign In / Providers → Email**: enabled. Turn **Confirm email** off for development and for the class demo (sign-up then logs straight in; Supabase's built-in mailer is heavily rate-limited). Turn it back on if real sellers use the app.
 5. **Authentication → URL Configuration**: Site URL `http://localhost:3000`; add redirect URLs `http://localhost:3000/auth/callback` and, later, `https://<your-vercel-domain>/auth/callback`.
 6. In `.env.local`:
    ```
@@ -60,7 +60,7 @@ pnpm check:env    # shows which modes are on
    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
    SUPABASE_SECRET_KEY=sb_secret_...
    ```
-7. Keep `DATA_MODE=memory` **until WS4 merges `SupabaseRepo`** (it is a stub on day one). Then set `DATA_MODE=supabase` and run `pnpm check:env` — it checks the tables and the credit function.
+7. Set `DATA_MODE=supabase` and run `pnpm check:env` — it checks the tables and the credit function. `SupabaseRepo` is implemented: it runs every query on the server with the secret key and filters by `user_id` in code (see D-013 in `memory/decisions.md`). Sign up once in the app; a profile row with 3 credits should appear in **Table Editor → profiles**.
 
 Share the URL and publishable key with the team freely; share the **secret key** only through a password manager, and only with people who need it (lead, WS4, WS2 for vector ingestion).
 
@@ -70,7 +70,7 @@ The Claude API is billed separately from your Claude Pro/Max subscription.
 
 1. https://console.anthropic.com → create the team organization (lead) and invite teammates, or each teammate uses their own account.
 2. **Billing**: add a small amount of credit ($5–$10 covers development; a live run costs a few cents). Set a **spend limit** per workspace.
-3. **API Keys → Create key** named `listwise-dev-<yourname>`.
+3. **API Keys → Create key** named `shelfpass-dev-<yourname>`.
 4. In `.env.local`:
    ```
    AI_MODE=live
@@ -78,15 +78,15 @@ The Claude API is billed separately from your Claude Pro/Max subscription.
    ANTHROPIC_MODEL_SMART=<current Sonnet-tier model ID>
    ANTHROPIC_MODEL_FAST=<current Haiku-tier model ID>
    ```
-   Look up the current IDs in the Anthropic docs (_Models overview_); the lead pins the exact pair for the team in the team chat and in Vercel, so everyone evaluates the same models. Update `PRICE_*` values if you pick other tiers (used only for the cost column).
-5. `pnpm check:env` verifies the key and both model IDs without spending tokens. Then `pnpm eval --suite golden --limit 2` runs two real cases.
+   Copy the current IDs from the Anthropic docs (_Models overview_); the lead pins the exact pair for the team in the team chat and in Vercel, so everyone evaluates the same models. The smart tier runs localization and compliance; the fast tier runs extraction, keywords, the judge and the photo check, so it must support image input (current Haiku-tier models do). Set the `PRICE_*` values from the Anthropic pricing page for the models you pick: they feed the trace's cost column and the per-run $ budget.
+5. `pnpm check:env` verifies the key and both model IDs without spending tokens. Then `pnpm eval --suite golden --limit 2` runs two real cases (three channels each, about 13 calls per case).
 
 Production uses a **separate** key that only lives in Vercel.
 
 ## §5 Stripe — payments in test mode (WS4; lead creates the account)
 
 1. https://dashboard.stripe.com → make sure **Test mode** is on (top right).
-2. **Product catalog → Add product**: name `ListWise Pro`, recurring, **$9.99 / month**. Copy the price id (`price_...`).
+2. **Product catalog → Add product**: name `ShelfPass Pro`, recurring, **$9.99 / month**. Copy the price id (`price_...`).
 3. **Developers → API keys**: copy the **secret key** (`sk_test_...`).
 4. **Settings → Billing → Customer portal**: activate (lets users cancel/update cards).
 5. Local webhooks with the Stripe CLI:
@@ -102,7 +102,7 @@ Production uses a **separate** key that only lives in Vercel.
    STRIPE_WEBHOOK_SECRET=whsec_...
    STRIPE_PRICE_ID_PRO=price_...
    ```
-7. Keep `BILLING_MODE=mock` **until WS4 merges `StripeBilling`**. Test card: `4242 4242 4242 4242`, any future date, any CVC.
+7. `StripeBilling` is implemented (Checkout for the subscription, Customer Portal). The webhook handles `checkout.session.completed` (upgrade), `invoice.paid` (monthly credit reset) and `customer.subscription.deleted` (downgrade). Test card: `4242 4242 4242 4242`, any future date, any CVC. Until you have Stripe keys, keep `BILLING_MODE=mock`: the rest of the app works the same.
 
 ## §6 Voyage AI — embeddings for vector RAG (WS2, optional)
 
@@ -110,7 +110,7 @@ Only needed for `RAG_MODE=vector`. https://www.voyageai.com → API key → `VOY
 
 ## §7 Vercel — the live URL (lead + WS4)
 
-See `docs/DEPLOYMENT.md`. Short version: import the GitHub repo in Vercel → add the env vars → deploy → add the Vercel domain to Supabase redirect URLs and as a Stripe webhook endpoint.
+See `docs/DEPLOYMENT.md` (step by step) and `docs/API_SETUP.md` (which key goes where). Short version: import the GitHub repo in Vercel → **Project → Settings → Environment Variables**: paste the same values as your `.env.local` (with production keys) → deploy → add the Vercel domain to Supabase redirect URLs and as a Stripe webhook endpoint. `NEXT_PUBLIC_*` values are baked in at build time, so redeploy after changing them.
 
 ## §8 Claude Code in this repo (everyone)
 
@@ -127,12 +127,14 @@ claude
 
 ## §9 Troubleshooting
 
-| Symptom                                       | Fix                                                                                                             |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `pnpm doctor` prints nothing                  | That's pnpm's built-in; ours is `pnpm check:env`                                                                |
-| `Missing ANTHROPIC_MODEL_SMART`               | Set both model IDs (§4) or go back to `AI_MODE=mock`                                                            |
-| `SupabaseRepo.… is not implemented yet (WS4)` | Use `DATA_MODE=memory` until WS4 merges                                                                         |
-| Login loops back to /login                    | Supabase redirect URLs (§3.5) and `NEXT_PUBLIC_APP_URL`                                                         |
-| Webhook 400 bad signature                     | `STRIPE_WEBHOOK_SECRET` must match the running `stripe listen` session (local) or the dashboard endpoint (prod) |
-| Data disappeared                              | `DATA_MODE=memory` resets on restart — expected                                                                 |
-| Playwright can't find a browser               | `pnpm exec playwright install chromium`                                                                         |
+| Symptom                                          | Fix                                                                                                                   |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm doctor` prints nothing                     | That's pnpm's built-in; ours is `pnpm check:env`                                                                      |
+| `Missing ANTHROPIC_MODEL_SMART`                  | Set both model IDs (§4) or go back to `AI_MODE=mock`                                                                  |
+| `Database error in …`                            | Run the migration (§3.3); check `SUPABASE_SECRET_KEY` is the **secret** key, not the publishable one                  |
+| Photo upload fails / 413 on Vercel               | Photos are resized in the browser; if you bypass the form, keep the request under 4.5 MB (≤ 4 photos, ≤ ~650 KB each) |
+| Changed a `NEXT_PUBLIC_*` value, nothing changed | Those are inlined at build time: restart `pnpm dev`, or redeploy on Vercel                                            |
+| Login loops back to /login                       | Supabase redirect URLs (§3.5) and `NEXT_PUBLIC_APP_URL`                                                               |
+| Webhook 400 bad signature                        | `STRIPE_WEBHOOK_SECRET` must match the running `stripe listen` session (local) or the dashboard endpoint (prod)       |
+| Data disappeared                                 | `DATA_MODE=memory` resets on restart — expected                                                                       |
+| Playwright can't find a browser                  | `pnpm exec playwright install chromium`                                                                               |

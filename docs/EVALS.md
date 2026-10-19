@@ -4,15 +4,15 @@
 
 ## What we evaluate
 
-| Layer                        | Question                                                            | Suite                            | Metric                             | Target            |
-| ---------------------------- | ------------------------------------------------------------------- | -------------------------------- | ---------------------------------- | ----------------- |
-| Retrieval                    | Did the compliance agent get the right policy chunks?               | `evals/datasets/retrieval.jsonl` | Recall@3, Precision@3, MRR, NDCG@3 | Recall@3 ≥ 0.9    |
-| Generation + agent execution | Is the final listing correct, compliant, well-formed and efficient? | `evals/datasets/golden.jsonl`    | Pass rate over 4 dimensions        | ≥ 80% (ship rule) |
-| Language quality             | Does it read like a native US listing?                              | LLM judge inside every run       | naturalness/clarity 1–5            | median ≥ 4        |
-| Units                        | Do rules, guardrails, harness, repo behave?                         | `*.test.ts` (Vitest)             | all pass                           | 100%              |
-| Journey                      | Can a user do the whole flow?                                       | `e2e/smoke.spec.ts` (Playwright) | pass                               | pass              |
+| Layer                        | Question                                                                        | Suite                            | Metric                             | Target            |
+| ---------------------------- | ------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------- | ----------------- |
+| Retrieval                    | Did the compliance agent get the right policy chunks?                           | `evals/datasets/retrieval.jsonl` | Recall@3, Precision@3, MRR, NDCG@3 | Recall@3 ≥ 0.9    |
+| Generation + agent execution | Is every channel's final listing correct, compliant, well-formed and efficient? | `evals/datasets/golden.jsonl`    | Pass rate over 4 dimensions        | ≥ 80% (ship rule) |
+| Language quality             | Does it read like a native US listing?                                          | LLM judge inside every run       | naturalness/clarity 1–5            | median ≥ 4        |
+| Units                        | Do rules, guardrails, harness, repo behave?                                     | `*.test.ts` (Vitest)             | all pass                           | 100%              |
+| Journey                      | Can a user do the whole flow?                                                   | `e2e/smoke.spec.ts` (Playwright) | pass                               | pass              |
 
-Current baseline (mock mode, 2026-10-18): golden **12/12**, retrieval recall@3 **0.93**, MRR **1.00**, NDCG@3 **0.95**. Live-mode numbers are the ones that count for the demo; record them in `memory/lessons-learned.md` and the write-up.
+Current baseline (mock mode, 2026-10-19, three channels per case unless the case selects fewer): golden **13/13**, retrieval recall@3 **0.93**, MRR **1.00**, NDCG@3 **0.95**; unit tests **68/68**; e2e **2/2**. Live-mode numbers are the ones that count for the demo; record them in `memory/lessons-learned.md` and the write-up.
 
 ## Golden dataset (`evals/datasets/golden.jsonl`)
 
@@ -30,21 +30,25 @@ Each line is one case: a real-looking seller input plus the ground truth written
     "must_not_appear": ["FDA approved", "100% safe", "#1"],
     "required_facts": [{ "attribute": "material", "contains": "silicone" }],
     "min_score": 70,
-    "max_llm_calls": 10
+    "max_llm_calls": 18
   }
 }
 ```
 
+`input.platforms` is optional; without it a case runs all three channels (Amazon US, TikTok Shop US, Shopify). `max_llm_calls` is 18 for three channels and 8 for a single-channel case.
+
 Every case is scored on the four dimensions from the course; a case passes only if all four pass:
 
-| Dimension           | Checks (`evals/lib/checks.ts`)                                                                        |
-| ------------------- | ----------------------------------------------------------------------------------------------------- |
-| **Outcome**         | Required facts appear in the final listing; score ≥ `min_score`; blocked cases are blocked            |
-| **Process**         | Every `must_flag` claim type was flagged (not verified); every restricted claim has a policy citation |
-| **Output contract** | No `must_not_appear` phrase in the final listing; policy gate PASS; platform validation passes        |
-| **Efficiency**      | LLM calls ≤ `max_llm_calls` (blocked inputs must use 0)                                               |
+| Dimension           | Checks (`evals/lib/checks.ts`)                                                                                                                                                                                                           |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Outcome**         | For **every** channel: required facts appear in the final listing; score ≥ `min_score`. Blocked cases are blocked                                                                                                                        |
+| **Process**         | Every `must_flag` claim type was flagged (not verified) in the shared review; every restricted claim has a policy citation                                                                                                               |
+| **Output contract** | For **every** channel: no `must_not_appear` phrase in any field (incl. SEO fields and tags); policy gate PASS; channel validation passes; no required _generated_ publish field is empty. The channels in the result match the selection |
+| **Efficiency**      | LLM calls ≤ `max_llm_calls` for the whole run (blocked inputs must use 0)                                                                                                                                                                |
 
-Coverage today: certification, absolute safety, ranking, antimicrobial, environmental, medical, origin, superlative, non-toxic claims; a supportable claim with evidence (must survive); a clean product; PII redaction; prompt injection; a prohibited product.
+The score reported per case is the **weakest** channel's score: a case is only as good as its worst channel.
+
+Coverage today (13 cases): certification, absolute safety, ranking, antimicrobial, environmental, medical, origin, superlative, non-toxic claims; a supportable claim with evidence (must survive); a clean product; PII redaction; prompt injection; a prohibited product; and `tiktok-only-led-strip` — a single-channel run (TikTok Shop only) where a sales-rank claim must be removed and hashtags filled. Photo handling is covered by unit tests (`orchestrator.test.ts`: a real PNG is checked, a fake one is blocked with 0 model calls) rather than golden cases, because mock mode cannot see pixels.
 
 **Add cases from real traces.** When something goes wrong in the app, copy the input from the trace page into a new case, write `expect` first, then fix the system (`/eval`, `eval-loop` skill). Never edit an existing case to make it pass.
 
@@ -73,14 +77,15 @@ Mock mode tests the _harness and plumbing_ (orchestration, tools, gate, scoring)
 
 Every run stores a trace (`pipeline_runs.spans`) viewable at `/listings/:id/trace`:
 
-| Captured                                     | Where                                            |
-| -------------------------------------------- | ------------------------------------------------ |
-| Model inputs & outputs (redacted, truncated) | `llm` spans                                      |
-| Tool-selection decisions and tool I/O        | `tool` spans                                     |
-| Latency per stage / call                     | `duration_ms`                                    |
-| Tokens, cache reads, estimated cost          | span attrs + run `usage`                         |
-| Failures, refusals, retries                  | span `error`, run `error`                        |
-| Guardrail findings                           | `input_guardrails` / `output_gate` stage outputs |
+| Captured                                                          | Where                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------ |
+| Model inputs & outputs (redacted, truncated, photo bytes omitted) | `llm` spans                                      |
+| One span per channel's localization agent                         | `localization.<channel>` stage spans             |
+| Tool-selection decisions and tool I/O                             | `tool` spans                                     |
+| Latency per stage / call                                          | `duration_ms`                                    |
+| Tokens, cache reads, estimated cost                               | span attrs + run `usage`                         |
+| Failures, refusals, retries                                       | span `error`, run `error`                        |
+| Guardrail findings                                                | `input_guardrails` / `output_gate` stage outputs |
 
 Traces → label good/bad → golden set → evals. That is the loop.
 

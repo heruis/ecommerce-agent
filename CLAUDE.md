@@ -1,6 +1,6 @@
-# ListWise AI — project memory
+# ShelfPass — project memory
 
-Agentic SaaS that turns Chinese product information into localized, compliance-reviewed **Amazon US** listings.
+Agentic SaaS that turns Chinese product information into one compliance-reviewed report with publish-ready fields for **Amazon US, TikTok Shop US and Shopify** (no live publishing; see docs/PRD.md).
 UCLA "Building LLM Applications" capstone. Product spec: `docs/PRD.md`. Architecture: `docs/ARCHITECTURE.md`.
 
 ## Commands
@@ -20,10 +20,11 @@ Modes in `.env.local`: `AI_MODE=mock|live`, `DATA_MODE=memory|supabase`, `BILLIN
 
 - `src/lib/contracts/` — zod types every layer shares. **Lead-owned. Never change in a workstream branch.**
 - `src/lib/harness/` — LLM client (live/mock), `structuredCall`, `runToolLoop` (ReAct), tracer, budget. Lead-owned.
-- `src/lib/pipeline/orchestrator.ts` — hub-and-spoke workflow: guardrails → extraction → keywords → localization → compliance → gate → scoring.
+- `src/lib/pipeline/orchestrator.ts` — hub-and-spoke workflow: guardrails → extraction → [photo check ‖ keywords] → localization (one agent per channel, parallel) → compliance (one review over all drafts) → gate → scoring + publish fields (per channel).
 - `src/lib/agents/<name>/` — `agent.ts` (calls the harness), `prompt.ts` (system prompt), `mock.ts` (offline stand-in), `tools.ts`.
-- `src/lib/guardrails/` (input screen, claim lexicon, output gate), `rules/` (platform limits), `rag/` (policy retrieval), `scoring/`.
-- `src/lib/db|auth|billing/` — ports with memory/mock implementations and Supabase/Stripe ones.
+- `src/lib/guardrails/` (input screen, claim lexicon, output gate), `rules/` (per-channel limits + "add product" form fields), `rag/` (policy retrieval), `scoring/`.
+- `src/lib/report/` — publish fields per channel, photo guidance, `channelViews` (seller edits re-checked in code), Markdown report.
+- `src/lib/db|auth|billing/` — ports with memory/mock implementations and Supabase/Stripe ones. `SupabaseRepo` uses the server-side secret key, so every query filters by `user_id` in code (D-013).
 - `src/app/` — Next.js 16 App Router. `api/` routes are thin: auth → ownership → work.
 - `knowledge/policies/` — compliance knowledge base (markdown, cited). `evals/` — golden cases + runner. `supabase/migrations/` — schema + RLS.
 
