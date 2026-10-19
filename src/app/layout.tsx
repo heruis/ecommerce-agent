@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ListWise AI — Chinese product info to compliant US listings",
+  title: "ShelfPass — Chinese product info to compliant US listings",
   description:
     "An agentic AI platform that turns Chinese product information into localized, search-ready and compliance-reviewed Amazon US listings.",
 };

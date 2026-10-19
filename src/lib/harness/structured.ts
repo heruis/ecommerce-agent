@@ -11,7 +11,8 @@ export interface StructuredCallOptions<T> {
   tier: ModelTier;
   effort?: Effort;
   system: string;
-  user: string;
+  /** Text, or content blocks (e.g. images + text) for multimodal agents. */
+  user: string | Anthropic.ContentBlockParam[];
   schema: z.ZodType<T>;
   mock: MockResponder;
   /** Extra attempts when the output parses but breaks the zod contract. */

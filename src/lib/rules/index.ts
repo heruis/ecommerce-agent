@@ -1,3 +1,3 @@
-export { RULES, rulesFor } from "./registry";
+export { platformLabel, RULES, rulesFor } from "./registry";
 export { validateListing } from "./validate";
-export type { PlatformRules } from "./types";
+export type { FieldSource, FormField, PlatformRules } from "./types";

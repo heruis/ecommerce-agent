@@ -10,45 +10,72 @@ export type WebhookOutcome = "processed" | "duplicate" | "ignored";
  *
  * Idempotency: recordStripeEvent() is called FIRST; Stripe retries and
  * duplicate deliveries return "duplicate" and change nothing, so a payment
- * can never add credits twice.
+ * can never add credits twice. If a handler throws, the event record is
+ * released so Stripe's retry is applied instead of being skipped.
  *
- * TODO(WS4): handle the events below and cover each with a test in
- * webhook.test.ts (duplicate delivery, unknown customer, cancellation).
- *  - checkout.session.completed  -> user = session.client_reference_id;
- *      setPlan(user, { plan: "pro", credits: plans().pro.runs,
- *      stripe_customer_id, stripe_subscription_id })
- *  - invoice.paid                -> renewal: find profile by customer id,
- *      reset credits to plans().pro.runs, set current_period_end
- *  - customer.subscription.deleted -> downgrade: plan "free", credits 0
- *      (keep stripe_customer_id so they can resubscribe)
- *  - anything else               -> "ignored"
- * Note: recordStripeEvent then a failure mid-handler would mark the event
- * processed without applying it. In SupabaseRepo, do both in one transaction
- * (an RPC), or delete the event row when the handler throws.
+ *  - checkout.session.completed    -> upgrade to Pro, set the monthly credits
+ *  - invoice.paid                  -> renewal: reset the monthly credits
+ *  - customer.subscription.deleted -> downgrade to Free with 0 credits
+ *  - anything else                 -> "ignored"
  */
 export async function applyStripeEvent(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> {
   const first = await repo.recordStripeEvent(event.id, event.type);
   if (!first) return "duplicate";
+  try {
+    return await handle(event, repo);
+  } catch (e) {
+    await repo.releaseStripeEvent(event.id);
+    throw e;
+  }
+}
 
+async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id;
-      if (!userId) return "ignored";
+      if (!userId || !(await repo.getProfile(userId))) return "ignored";
       await repo.setPlan(userId, {
         plan: "pro",
         credits: plans().pro.runs,
-        stripe_customer_id:
-          typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null),
-        stripe_subscription_id:
-          typeof session.subscription === "string"
-            ? session.subscription
-            : (session.subscription?.id ?? null),
+        stripe_customer_id: idOf(session.customer),
+        stripe_subscription_id: idOf(session.subscription),
       });
       return "processed";
     }
-    // TODO(WS4): invoice.paid, customer.subscription.deleted
+    case "invoice.paid": {
+      const invoice = event.data.object as Stripe.Invoice;
+      const customer = idOf(invoice.customer);
+      const profile = customer ? await repo.getProfileByStripeCustomer(customer) : null;
+      if (!profile) return "ignored"; // first invoice can arrive before checkout completes
+      const periodEnd = invoice.lines?.data?.[0]?.period?.end;
+      await repo.setPlan(profile.id, {
+        plan: "pro",
+        credits: plans().pro.runs,
+        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      });
+      return "processed";
+    }
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      const customer = idOf(sub.customer);
+      const profile = customer ? await repo.getProfileByStripeCustomer(customer) : null;
+      if (!profile) return "ignored";
+      // Keep stripe_customer_id so they can resubscribe with the same customer.
+      await repo.setPlan(profile.id, {
+        plan: "free",
+        credits: 0,
+        stripe_subscription_id: null,
+        current_period_end: null,
+      });
+      return "processed";
+    }
     default:
       return "ignored";
   }
+}
+
+function idOf(x: string | { id: string } | null | undefined): string | null {
+  if (!x) return null;
+  return typeof x === "string" ? x : x.id;
 }

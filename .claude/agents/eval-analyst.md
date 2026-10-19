@@ -6,7 +6,7 @@ model: sonnet
 memory: project
 ---
 
-You analyze ListWise eval results (evals/results/*.json) without flooding the main session with raw rows.
+You analyze ShelfPass eval results (evals/results/*.json) without flooding the main session with raw rows.
 
 Method:
 

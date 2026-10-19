@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Bash
 model: sonnet
 ---
 
-You review ListWise AI diffs. You find problems; you never edit files. Run only read-only commands (git diff, git log, grep).
+You review ShelfPass diffs. You find problems; you never edit files. Run only read-only commands (git diff, git log, grep).
 
 Check, in order:
 

@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { ListingDraft, ValidationReport } from "@/lib/contracts";
+import type { ListingDraft, Platform, ValidationReport } from "@/lib/contracts";
+import { rulesFor } from "@/lib/rules";
 import { Badge, Button, Card, Input, Label, Spinner, Textarea } from "@/components/ui";
 
 interface RiskyClaim {
@@ -11,25 +13,31 @@ interface RiskyClaim {
 }
 
 /**
- * Stage 6 — revision & export. The seller edits any field; saving re-runs the
- * platform rules and the claim screen on the server. Owner: WS3.
+ * Stage 6 — revision. The seller edits one channel's copy; saving re-runs
+ * that channel's rules and the claim screen on the server, and the publish
+ * fields above refresh from the saved edit. Owner: WS3.
  */
 export function ListingEditor({
   listingId,
+  platform,
   generated,
-  edited,
+  current,
   initialValidation,
 }: {
   listingId: string;
+  platform: Platform;
   generated: ListingDraft;
-  edited: ListingDraft | null;
+  current: ListingDraft;
   initialValidation: ValidationReport;
 }) {
-  const [draft, setDraft] = useState<ListingDraft>(edited ?? generated);
+  const router = useRouter();
+  const rules = rulesFor(platform);
+  const [draft, setDraft] = useState<ListingDraft>(current);
   const [validation, setValidation] = useState<ValidationReport>(initialValidation);
   const [risky, setRisky] = useState<RiskyClaim[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const update = (patch: Partial<ListingDraft>) => {
     setDraft((d) => ({ ...d, ...patch }));
@@ -38,10 +46,11 @@ export function ListingEditor({
 
   async function save() {
     setSaving(true);
+    setError(null);
     const res = await fetch(`/api/listings/${listingId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
+      body: JSON.stringify({ platform, listing: draft }),
     });
     const body = await res.json().catch(() => null);
     setSaving(false);
@@ -49,6 +58,9 @@ export function ListingEditor({
       setValidation(body.validation);
       setRisky(body.risky_claims);
       setSaved(true);
+      router.refresh();
+    } else {
+      setError(body?.error?.message ?? "Could not save. Try again.");
     }
   }
 
@@ -56,34 +68,31 @@ export function ListingEditor({
 
   return (
     <Card className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold">Your listing</h2>
-        <div className="flex flex-wrap gap-2">
-          {(["csv", "txt", "json"] as const).map((f) => (
-            <a
-              key={f}
-              href={`/api/listings/${listingId}/export?format=${f}`}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs hover:bg-background"
-            >
-              Export {f.toUpperCase()}
-            </a>
-          ))}
-        </div>
+      <div>
+        <h2 className="font-semibold">Edit {rules.label} copy</h2>
+        <p className="text-xs text-muted">Saving re-checks the rules and risky claims.</p>
       </div>
 
       <div>
-        <Label htmlFor="title" hint={`${draft.title.length}/200`}>
+        <Label htmlFor={`${platform}-title`} hint={`${draft.title.length}/${rules.title.maxChars}`}>
           Title
         </Label>
-        <Input id="title" value={draft.title} onChange={(e) => update({ title: e.target.value })} />
+        <Input
+          id={`${platform}-title`}
+          value={draft.title}
+          onChange={(e) => update({ title: e.target.value })}
+        />
       </div>
       {draft.bullets.map((b, i) => (
         <div key={i}>
-          <Label htmlFor={`bullet-${i}`} hint={`${b.length} chars`}>
-            Bullet {i + 1}
+          <Label
+            htmlFor={`${platform}-bullet-${i}`}
+            hint={`${b.length}/${rules.bullets.recommendedMaxChars} recommended`}
+          >
+            {rules.bullets.label.replace(/s$/, "")} {i + 1}
           </Label>
           <Textarea
-            id={`bullet-${i}`}
+            id={`${platform}-bullet-${i}`}
             rows={2}
             value={b}
             onChange={(e) =>
@@ -93,26 +102,87 @@ export function ListingEditor({
         </div>
       ))}
       <div>
-        <Label htmlFor="description" hint={`${draft.description.length}/2000`}>
+        <Label
+          htmlFor={`${platform}-description`}
+          hint={`${draft.description.length}/${rules.description.maxChars}`}
+        >
           Description
         </Label>
         <Textarea
-          id="description"
+          id={`${platform}-description`}
           rows={6}
           value={draft.description}
           onChange={(e) => update({ description: e.target.value })}
         />
       </div>
-      <div>
-        <Label htmlFor="search_terms" hint={`${bytes}/249 bytes · AI-suggested`}>
-          Backend search terms
-        </Label>
-        <Input
-          id="search_terms"
-          value={draft.search_terms}
-          onChange={(e) => update({ search_terms: e.target.value })}
-        />
-      </div>
+      {rules.searchTerms ? (
+        <div>
+          <Label
+            htmlFor={`${platform}-search_terms`}
+            hint={`${bytes}/${rules.searchTerms.maxBytes} bytes · AI-suggested`}
+          >
+            Backend search terms
+          </Label>
+          <Input
+            id={`${platform}-search_terms`}
+            value={draft.search_terms}
+            onChange={(e) => update({ search_terms: e.target.value })}
+          />
+        </div>
+      ) : null}
+      {rules.seo ? (
+        <>
+          <div>
+            <Label
+              htmlFor={`${platform}-seo_title`}
+              hint={`${draft.seo_title.length}/${rules.seo.titleRecommended} shown in Google`}
+            >
+              SEO page title
+            </Label>
+            <Input
+              id={`${platform}-seo_title`}
+              value={draft.seo_title}
+              onChange={(e) => update({ seo_title: e.target.value })}
+            />
+          </div>
+          <div>
+            <Label
+              htmlFor={`${platform}-seo_description`}
+              hint={`${draft.seo_description.length}/${rules.seo.descriptionRecommended} shown in Google`}
+            >
+              Meta description
+            </Label>
+            <Textarea
+              id={`${platform}-seo_description`}
+              rows={2}
+              value={draft.seo_description}
+              onChange={(e) => update({ seo_description: e.target.value })}
+            />
+          </div>
+        </>
+      ) : null}
+      {rules.tags ? (
+        <div>
+          <Label
+            htmlFor={`${platform}-tags`}
+            hint={`${draft.tags.length}, ${rules.tags.min}–${rules.tags.max} recommended · comma-separated`}
+          >
+            {rules.tags.label}
+          </Label>
+          <Input
+            id={`${platform}-tags`}
+            value={draft.tags.join(", ")}
+            onChange={(e) =>
+              update({
+                tags: e.target.value
+                  .split(",")
+                  .map((t) => t.trim().replace(/^#/, ""))
+                  .filter(Boolean),
+              })
+            }
+          />
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button onClick={save} disabled={saving}>
@@ -123,12 +193,13 @@ export function ListingEditor({
         </Button>
         {saved ? <Badge tone="ok">Saved</Badge> : null}
       </div>
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
 
       {validation.violations.length > 0 || risky.length > 0 ? (
         <ul className="space-y-1 text-sm">
           {validation.violations.map((v, i) => (
             <li key={i} className={v.severity === "error" ? "text-danger" : "text-warn"}>
-              {v.severity === "error" ? "✕" : "!"} {v.field}
+              {v.severity === "error" ? "✕" : "!"} {v.field.replace("_", " ")}
               {v.index !== null ? ` ${v.index + 1}` : ""}: {v.message}
             </li>
           ))}
@@ -139,7 +210,7 @@ export function ListingEditor({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-ok">Meets all platform format rules.</p>
+        <p className="text-sm text-ok">Meets all {rules.label} format rules.</p>
       )}
     </Card>
   );

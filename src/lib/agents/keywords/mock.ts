@@ -1,4 +1,5 @@
 import type { KeywordSet, ProductFacts } from "@/lib/contracts";
+import { usageProfile } from "../shared/use-cases";
 
 /** Deterministic stand-in for the keyword agent (AI_MODE=mock). */
 export function mockKeywords(facts: ProductFacts): KeywordSet {
@@ -6,6 +7,8 @@ export function mockKeywords(facts: ProductFacts): KeywordSet {
   const words = type.split(" ");
   const noun = words.slice(-1)[0] ?? "product";
   const material = facts.facts.find((f) => f.attribute === "material")?.value.toLowerCase();
+  const use = usageProfile(facts.category);
+  const [m1, m2, m3] = use.modifiers;
   const features = facts.facts
     .filter((f) => f.attribute === "feature")
     .map((f) => f.value.toLowerCase());
@@ -14,26 +17,35 @@ export function mockKeywords(facts: ProductFacts): KeywordSet {
     type,
     material ? `${material.replace("food-grade ", "")} ${noun}` : `${noun}`,
     words.includes("collapsible") ? `foldable ${noun}` : `reusable ${noun}`,
-    `travel ${noun}`,
+    `${m1} ${noun}`,
   ]).slice(0, 5);
 
   const secondary = unique([
     `portable ${noun}`,
-    `${noun} for camping`,
-    `${noun} for hiking`,
+    `${noun} for ${m2}`,
+    `${noun} for ${m3}`,
     `reusable ${noun}`,
     ...features.map((f) => `${f} ${noun}`),
-    `${noun} with lid`,
-    `outdoor ${noun}`,
-    `backpacking ${noun}`,
+    ...(use.modifiers[0] === "travel"
+      ? [`${noun} with lid`, `outdoor ${noun}`, `backpacking ${noun}`]
+      : [`${m2} ${noun}`, `${noun} gift`]),
   ])
     .filter((k) => !primary.includes(k))
     .slice(0, 12);
 
+  const hashtags = unique([
+    noun.replace(/\s+/g, ""),
+    type.replace(/\s+/g, ""),
+    ...(words.includes("collapsible") ? ["collapsible"] : []),
+    ...use.hashtags,
+    "tiktokshopfinds",
+  ]).slice(0, 6);
+
   return {
     primary,
     secondary,
-    rationale: `Lead with the product type "${type}" and its material, then cover use cases (travel, camping, hiking) and feature variations shoppers type. AI-suggested; no search-volume data.`,
+    hashtags,
+    rationale: `Lead with the product type "${type}" and its material, then cover use cases (${use.modifiers.join(", ")}) and feature variations shoppers type. AI-suggested; no search-volume data.`,
   };
 }
 

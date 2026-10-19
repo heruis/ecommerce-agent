@@ -2,7 +2,7 @@
  * CONTRACTS — persisted records, traces and streaming events.
  */
 import { z } from "zod";
-import { ListingDraft, PipelineResult, ProductInput, Stage } from "./schemas";
+import { ListingDraft, Platform, PipelineResult, ProductInput, Stage } from "./schemas";
 
 // ---------------------------------------------------------------------------
 // Observability: one run = a tree of spans (stage -> llm call / tool call)
@@ -83,14 +83,16 @@ export const Listing = z.object({
   status: ListingStatus,
   input: ProductInput,
   result: PipelineResult.nullable(),
-  /** The seller's edited version; null until they edit. */
-  edited: ListingDraft.nullable(),
+  /** The seller's edited versions, keyed by platform; null until they edit. */
+  edited: z.record(z.string(), ListingDraft).nullable(),
   last_run_id: z.string().nullable(),
 });
 export type Listing = z.infer<typeof Listing>;
 
 export type ListingSummary = Pick<Listing, "id" | "status" | "created_at" | "updated_at"> & {
   title: string;
+  platforms: Platform[];
+  /** Average quality score across channels. */
   score: number | null;
 };
 
@@ -103,7 +105,7 @@ export type PipelineEvent =
   | { type: "stage_started"; stage: Stage }
   | { type: "stage_completed"; stage: Stage; summary: string }
   | { type: "stage_failed"; stage: Stage; error: string }
-  | { type: "tool_called"; stage: Stage; tool: string; summary: string }
+  | { type: "tool_called"; stage: Stage; tool: string; summary: string; platform?: Platform }
   | {
       type: "run_completed";
       run_id: string;

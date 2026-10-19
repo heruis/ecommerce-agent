@@ -35,11 +35,14 @@ describe("MemoryRepo (reference behavior for SupabaseRepo)", () => {
     expect(await repo.getListing(bob.id, listing.id)).toBeNull();
     expect(await repo.listListings(bob.id)).toHaveLength(0);
     await expect(
-      repo.saveEdits(bob.id, listing.id, {
+      repo.saveEdits(bob.id, listing.id, "amazon_us", {
         title: "x",
         bullets: [],
         description: "",
         search_terms: "",
+        seo_title: "",
+        seo_description: "",
+        tags: [],
       }),
     ).rejects.toThrow();
   });

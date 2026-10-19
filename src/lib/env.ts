@@ -9,15 +9,19 @@ const EnvSchema = z.object({
   DATA_MODE: z.enum(["memory", "supabase"]).default("memory"),
   BILLING_MODE: z.enum(["mock", "stripe"]).default("mock"),
   RAG_MODE: z.enum(["lexical", "vector"]).default("lexical"),
-  NEXT_PUBLIC_APP_URL: z.string().default("http://localhost:3000"),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
+  /** Set automatically by Vercel (host name only, no https://). */
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),
 
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL_SMART: z.string().optional(),
   ANTHROPIC_MODEL_FAST: z.string().optional(),
-  PRICE_SMART_INPUT_PER_MTOK: z.coerce.number().default(2),
-  PRICE_SMART_OUTPUT_PER_MTOK: z.coerce.number().default(10),
-  PRICE_FAST_INPUT_PER_MTOK: z.coerce.number().default(0.1),
-  PRICE_FAST_OUTPUT_PER_MTOK: z.coerce.number().default(0.5),
+  // Conservative defaults so the per-run cost cap errs on the safe side;
+  // set the real prices for your models from the Anthropic pricing page.
+  PRICE_SMART_INPUT_PER_MTOK: z.coerce.number().default(3),
+  PRICE_SMART_OUTPUT_PER_MTOK: z.coerce.number().default(15),
+  PRICE_FAST_INPUT_PER_MTOK: z.coerce.number().default(1),
+  PRICE_FAST_OUTPUT_PER_MTOK: z.coerce.number().default(5),
 
   VOYAGE_API_KEY: z.string().optional(),
 
@@ -58,6 +62,14 @@ export function requireEnv<K extends keyof Env>(key: K, why: string): NonNullabl
     throw new Error(`Missing ${String(key)} (${why}). See docs/SETUP.md.`);
   }
   return value as NonNullable<Env[K]>;
+}
+
+/** Public base URL for redirects (Stripe, auth emails). No trailing slash. */
+export function appUrl(): string {
+  const e = env();
+  if (e.NEXT_PUBLIC_APP_URL) return e.NEXT_PUBLIC_APP_URL.replace(/\/+$/, "");
+  if (e.VERCEL_PROJECT_PRODUCTION_URL) return `https://${e.VERCEL_PROJECT_PRODUCTION_URL}`;
+  return "http://localhost:3000";
 }
 
 /** Test helper: forget the cached env after mutating process.env. */

@@ -1,13 +1,15 @@
 "use client";
 
 import { STAGES, type PipelineEvent, type Stage } from "@/lib/contracts";
+import { platformLabel } from "@/lib/rules";
 import { Badge, Card, Spinner } from "@/components/ui";
 
 const LABELS: Record<Stage, string> = {
   input_guardrails: "Input guardrails",
   extraction: "Extraction agent",
+  images: "Photo check (vision)",
   keywords: "Keyword agent",
-  localization: "Localization agent",
+  localization: "Localization agents (one per marketplace)",
   compliance: "Compliance agent",
   output_gate: "Policy gate",
   scoring: "Quality score",
@@ -15,6 +17,9 @@ const LABELS: Record<Stage, string> = {
 
 /** Live view of the pipeline: one row per stage plus tool calls as they happen. Owner: WS3. */
 export function RunProgress({ events }: { events: PipelineEvent[] }) {
+  // The photo stage only runs when photos were uploaded.
+  const hasImages = events.some((e) => e.type === "stage_started" && e.stage === "images");
+  const stages = STAGES.filter((s) => s !== "images" || hasImages);
   const state = (stage: Stage) => {
     if (events.some((e) => e.type === "stage_failed" && e.stage === stage)) return "failed";
     if (events.some((e) => e.type === "stage_completed" && e.stage === stage)) return "done";
@@ -40,7 +45,7 @@ export function RunProgress({ events }: { events: PipelineEvent[] }) {
         ) : null}
       </div>
       <ol className="space-y-3">
-        {STAGES.map((stage) => {
+        {stages.map((stage) => {
           const s = state(stage);
           return (
             <li key={stage} className="flex gap-3">
@@ -54,7 +59,10 @@ export function RunProgress({ events }: { events: PipelineEvent[] }) {
                 {summary(stage) ? <p className="text-xs text-muted">{summary(stage)}</p> : null}
                 {tools(stage).map((t, i) => (
                   <p key={i} className="font-mono text-xs text-muted">
-                    ↳ {t.type === "tool_called" ? t.summary : null}
+                    ↳{" "}
+                    {t.type === "tool_called"
+                      ? `${t.platform ? `[${platformLabel(t.platform)}] ` : ""}${t.summary}`
+                      : null}
                   </p>
                 ))}
               </div>

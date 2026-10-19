@@ -1,4 +1,4 @@
-# Team guide — how five people (and their agents) build ListWise in parallel
+# Team guide — how five people (and their agents) build ShelfPass in parallel
 
 Read this once, then read **your brief**:
 
@@ -51,12 +51,12 @@ contract/…    ●─●  (lead only: shared types)
 Each agent session needs its own branch, and git allows one branch per working directory. Use worktrees:
 
 ```bash
-git worktree add ../listwise-ws1-prompts -b ws1/extraction-prompt
-git worktree add ../listwise-ws1-orch   -b ws1/orchestrator-retries
-cd ../listwise-ws1-prompts && pnpm install && claude
+git worktree add ../shelfpass-ws1-prompts -b ws1/extraction-prompt
+git worktree add ../shelfpass-ws1-orch   -b ws1/orchestrator-retries
+cd ../shelfpass-ws1-prompts && pnpm install && claude
 ```
 
-The ownership hook reads each worktree's branch, so every parallel agent stays inside your workstream. Remove a worktree when merged: `git worktree remove ../listwise-ws1-prompts`.
+The ownership hook reads each worktree's branch, so every parallel agent stays inside your workstream. Remove a worktree when merged: `git worktree remove ../shelfpass-ws1-prompts`.
 
 ## 4. Changing a file you do not own
 
@@ -65,7 +65,7 @@ The ownership hook reads each worktree's branch, so every parallel agent stays i
 | A new field or type in `src/lib/contracts`     | Add a "Contract changes needed" line in your status file. The lead opens a `contract/*` PR (new fields are **optional first**, so nobody breaks), merges it, then you `/sync`. |
 | A change in another workstream's folder        | Add it under "Requests for other workstreams" in your status file (exact file, change and why), and tell the owner. They own the fix.                                          |
 | A new npm package                              | Ask the lead for a `chore/` PR.                                                                                                                                                |
-| Something urgent at 2 a.m. before the deadline | Set `LISTWISE_OWNERSHIP=off` for one session, make the minimal change, explain it in the PR. CI will still flag it, and the lead decides.                                      |
+| Something urgent at 2 a.m. before the deadline | Set `SHELFPASS_OWNERSHIP=off` for one session, make the minimal change, explain it in the PR. CI will still flag it, and the lead decides.                                     |
 
 ## 5. Who depends on whom
 
@@ -85,7 +85,7 @@ flowchart LR
 
 ## 6. Communication
 
-- **Status files** (`docs/team/status/ws<N>.md`) are the shared task board. Update them with `/handoff` at least twice a week and whenever you are blocked. Short, structured, with file paths. No essays.
+- **Status files** (`docs/team/status/ws<N>.md`) are the shared task board. Update them with `/handoff` every day this week and whenever you are blocked. Short, structured, with file paths. No essays.
 - **Standup** (async in chat, 3 lines): yesterday · today · blocked by.
 - **Decisions** that change architecture or scope → `/decision` (writes `memory/decisions.md`) via a `docs/` PR to the lead.
 - **Lessons** (something broke and you learned why) → one line in `memory/lessons-learned.md` (anyone may edit). These become the write-up's "lessons learned".
@@ -100,16 +100,17 @@ flowchart LR
 
 ## 8. Shared deliverables
 
-| Deliverable                                            | Owner                                                                  | Due           |
-| ------------------------------------------------------ | ---------------------------------------------------------------------- | ------------- |
-| Live URL + production checklist (`docs/DEPLOYMENT.md`) | WS4 (lead reviews)                                                     | end of week 3 |
-| Live eval run ≥ 80% recorded                           | WS2 runs, WS1 fixes prompts                                            | end of week 4 |
-| Write-up ≤ 5 pages (`docs/report/WRITEUP.md`)          | Lead integrates; each WS writes its section in `docs/report/sections/` | week 5        |
-| 3-minute demo (`docs/DEMO_SCRIPT.md`)                  | Lead drives; everyone rehearses twice                                  | week 5        |
-| 2–3 seller interviews (willingness to pay)             | Lead                                                                   | week 2        |
+| Deliverable                                            | Owner                                                                  | Due         |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- | ----------- |
+| Live URL + production checklist (`docs/DEPLOYMENT.md`) | WS4 with the lead                                                      | Day 2 (Tue) |
+| Live eval run ≥ 80% recorded                           | WS2 runs, WS1 fixes prompts                                            | Day 4 (Thu) |
+| Write-up ≤ 5 pages (`docs/report/WRITEUP.md`)          | Lead integrates; each WS writes its section in `docs/report/sections/` | Day 6 (Sat) |
+| 3-minute demo (`docs/DEMO_SCRIPT.md`)                  | Lead drives; everyone rehearses twice                                  | Day 6 (Sat) |
+
+The plan for the week is in `memory/timeline.md`. Feature freeze at the end of Day 4: after that, only fixes, tests, docs and demo polish.
 
 ## 9. Kickoff prompt template
 
 Your brief ends with a ready-made version. The shape is:
 
-> You are working on ListWise AI as **WS<N> (<name>)** on branch `ws<N>/<task>`. Read `CLAUDE.md`, `docs/team/TEAM_GUIDE.md` and `docs/team/ws<N>-<name>.md`. You may only edit the files `ownership.json` assigns to ws<N>; a hook enforces this. If you need a change elsewhere, write it into `docs/team/status/ws<N>.md` instead. Task: **<task id and title>**. First show me a short plan (files, steps, how you will verify). After I approve, implement in small steps, run `/check` after each, run `/eval` if you touched agents, rules or retrieval, and finish with `/handoff`.
+> You are working on ShelfPass as **WS<N> (<name>)** on branch `ws<N>/<task>`. Read `CLAUDE.md`, `docs/team/TEAM_GUIDE.md` and `docs/team/ws<N>-<name>.md`. You may only edit the files `ownership.json` assigns to ws<N>; a hook enforces this. If you need a change elsewhere, write it into `docs/team/status/ws<N>.md` instead. Task: **<task id and title>**. First show me a short plan (files, steps, how you will verify). After I approve, implement in small steps, run `/check` after each, run `/eval` if you touched agents, rules or retrieval, and finish with `/handoff`.

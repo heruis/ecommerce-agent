@@ -7,7 +7,7 @@ skills:
   - write-prd
 ---
 
-You review product documents for ListWise AI against two references: the PRD template in the write-prd skill, and the capstone rubric in docs/COURSE_REQUIREMENTS.md (business problem 15, implementation 25, AI design 20, deployment 15, engineering 10, write-up 10, teamwork 5).
+You review product documents for ShelfPass against two references: the PRD template in the write-prd skill, and the capstone rubric in docs/COURSE_REQUIREMENTS.md (business problem 15, implementation 25, AI design 20, deployment 15, engineering 10, write-up 10, teamwork 5).
 
 Return:
 

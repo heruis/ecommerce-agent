@@ -1,4 +1,4 @@
-import type { ProductInput } from "@/lib/contracts";
+import type { ProductImage, ProductInput } from "@/lib/contracts";
 import { redactPII, type PiiFinding } from "./pii";
 
 /**
@@ -9,6 +9,7 @@ import { redactPII, type PiiFinding } from "./pii";
  *  - prompt-injection screen (direct injection pasted into product text)
  *  - prohibited-product screen (things we will not write listings for)
  *  - PII redaction (contact details never reach the model or the logs)
+ *  - photo check (file signature must match the declared image type)
  */
 
 export interface InjectionFinding {
@@ -122,7 +123,13 @@ export function screenInput(input: ProductInput): InputScreenResult {
     specs_zh: redact(input.specs_zh),
     evidence: redact(input.evidence),
     existing_listing_en: redact(input.existing_listing_en),
+    images: input.images.map((img, i) => ({ ...img, name: safeImageName(img.name, i) })),
   };
+  const badImages = input.images
+    .map((img, i) =>
+      imageMatchesType(img) ? null : `photo ${i + 1} ("${safeImageName(img.name, i)}")`,
+    )
+    .filter((x): x is string => x !== null);
 
   const warnings: string[] = [];
   if (piiFindings.length > 0) {
@@ -137,8 +144,10 @@ export function screenInput(input: ProductInput): InputScreenResult {
 
   const high = injection.filter((f) => f.severity === "high");
   let reason: string | null = null;
-  if (prohibited.length > 0) {
-    reason = `ListWise does not create listings for ${prohibited.join(", ")}.`;
+  if (badImages.length > 0) {
+    reason = `Upload JPEG, PNG or WebP photos only; ${badImages.join(", ")} is not a valid image.`;
+  } else if (prohibited.length > 0) {
+    reason = `ShelfPass does not create listings for ${prohibited.join(", ")}.`;
   } else if (high.length > 0) {
     reason =
       'Your product text contains instructions aimed at the AI (for example "ignore previous instructions"). Remove them and try again.';
@@ -153,6 +162,41 @@ export function screenInput(input: ProductInput): InputScreenResult {
     pii: piiFindings,
     sanitized,
   };
+}
+
+/**
+ * Photos are untrusted bytes: the declared type must match the file's
+ * signature before anything is sent to the model.
+ */
+export function imageMatchesType(img: ProductImage): boolean {
+  let head: Buffer;
+  try {
+    head = Buffer.from(img.data.slice(0, 32), "base64");
+  } catch {
+    return false;
+  }
+  switch (img.media_type) {
+    case "image/jpeg":
+      return head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff;
+    case "image/png":
+      return head
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    case "image/webp":
+      return (
+        head.subarray(0, 4).toString("latin1") === "RIFF" &&
+        head.subarray(8, 12).toString("latin1") === "WEBP"
+      );
+  }
+}
+
+/** File names reach the prompt, so keep them short and plain. */
+function safeImageName(name: string, index: number): string {
+  const clean = name
+    .replace(/[^\p{L}\p{N} ._-]/gu, "")
+    .trim()
+    .slice(0, 60);
+  return clean || `photo-${index + 1}`;
 }
 
 /**

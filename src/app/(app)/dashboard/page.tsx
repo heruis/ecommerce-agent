@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getRepo } from "@/lib/db";
 import { Badge, Card, PageHeader } from "@/components/ui";
+import { platformLabel } from "@/lib/rules";
 
 const TONE = { completed: "ok", failed: "danger", running: "brand", draft: "neutral" } as const;
 
@@ -40,11 +41,16 @@ export default async function DashboardPage() {
               <Card className="flex items-center justify-between gap-4 hover:border-brand">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{l.title}</p>
-                  <p className="text-xs text-muted">{new Date(l.updated_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted">
+                    {l.platforms.map(platformLabel).join(" · ")} ·{" "}
+                    {new Date(l.updated_at).toLocaleString()}
+                  </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   {l.score !== null ? (
-                    <span className="tabular-nums text-sm">{l.score}/100</span>
+                    <span className="tabular-nums text-sm" title="Average across channels">
+                      {l.score}/100
+                    </span>
                   ) : null}
                   <Badge tone={TONE[l.status]}>{l.status}</Badge>
                 </div>

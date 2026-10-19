@@ -15,7 +15,7 @@ export default function LandingPage() {
           Turn Chinese product info into a listing you can actually publish.
         </h1>
         <p className="mx-auto max-w-2xl text-lg text-muted">
-          ListWise AI localizes your product for US shoppers, checks every marketing claim against
+          ShelfPass localizes your product for US shoppers, checks every marketing claim against
           marketplace and US rules, and scores the result, so
           &ldquo;FDA认证，100%安全，美国销量第一&rdquo; doesn&apos;t become a suppressed listing.
         </p>

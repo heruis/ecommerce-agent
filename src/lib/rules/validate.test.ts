@@ -10,6 +10,9 @@ const good: ListingDraft = {
   ),
   description: "A practical collapsible cup made with food-grade silicone. ".repeat(4),
   search_terms: "foldable mug backpacking camping drinkware",
+  seo_title: "",
+  seo_description: "",
+  tags: [],
 };
 
 describe("validateListing (amazon_us)", () => {

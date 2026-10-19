@@ -42,7 +42,61 @@ describe("applyStripeEvent", () => {
     expect((await repo.getProfile(user.id))!.credits_remaining).toBe(49);
   });
 
-  it.todo("invoice.paid resets the monthly credits (WS4)");
-  it.todo("customer.subscription.deleted downgrades to free (WS4)");
-  it.todo("an event for an unknown customer is ignored, not an error (WS4)");
+  it("invoice.paid resets the monthly credits", async () => {
+    const repo = new MemoryRepo();
+    await repo.ensureProfile(user);
+    await repo.setPlan(user.id, { plan: "pro", credits: 2, stripe_customer_id: "cus_1" });
+    const e = event("evt_3", "invoice.paid", {
+      customer: "cus_1",
+      lines: { data: [{ period: { end: 1_800_000_000 } }] },
+    });
+    expect(await applyStripeEvent(e, repo)).toBe("processed");
+    expect(await repo.getProfile(user.id)).toMatchObject({
+      plan: "pro",
+      credits_remaining: 50,
+      current_period_end: new Date(1_800_000_000 * 1000).toISOString(),
+    });
+  });
+
+  it("customer.subscription.deleted downgrades to free", async () => {
+    const repo = new MemoryRepo();
+    await repo.ensureProfile(user);
+    await repo.setPlan(user.id, {
+      plan: "pro",
+      credits: 50,
+      stripe_customer_id: "cus_1",
+      stripe_subscription_id: "sub_1",
+    });
+    const e = event("evt_4", "customer.subscription.deleted", { customer: "cus_1" });
+    expect(await applyStripeEvent(e, repo)).toBe("processed");
+    expect(await repo.getProfile(user.id)).toMatchObject({
+      plan: "free",
+      credits_remaining: 0,
+      stripe_customer_id: "cus_1",
+      stripe_subscription_id: null,
+    });
+  });
+
+  it("an event for an unknown customer is ignored, not an error", async () => {
+    const repo = new MemoryRepo();
+    const e = event("evt_5", "invoice.paid", { customer: "cus_unknown", lines: { data: [] } });
+    expect(await applyStripeEvent(e, repo)).toBe("ignored");
+  });
+
+  it("releases the event when the handler fails, so the retry is applied", async () => {
+    const repo = new MemoryRepo();
+    await repo.ensureProfile(user);
+    const failing = Object.assign(Object.create(repo), {
+      setPlan: async () => {
+        throw new Error("db down");
+      },
+    }) as MemoryRepo;
+    const e = event("evt_6", "checkout.session.completed", {
+      client_reference_id: user.id,
+      customer: "cus_1",
+      subscription: "sub_1",
+    });
+    await expect(applyStripeEvent(e, failing)).rejects.toThrow("db down");
+    expect(await applyStripeEvent(e, repo)).toBe("processed");
+  });
 });

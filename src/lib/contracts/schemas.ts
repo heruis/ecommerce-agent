@@ -11,7 +11,7 @@ import { z } from "zod";
 // Enumerations
 // ---------------------------------------------------------------------------
 
-export const PLATFORMS = ["amazon_us", "tiktok_us"] as const;
+export const PLATFORMS = ["amazon_us", "tiktok_us", "shopify"] as const;
 export const Platform = z.enum(PLATFORMS);
 export type Platform = z.infer<typeof Platform>;
 
@@ -30,13 +30,22 @@ export const CATEGORIES = [
 export const Category = z.enum(CATEGORIES);
 export type Category = z.infer<typeof Category>;
 
-export const LISTING_FIELDS = ["title", "bullets", "description", "search_terms"] as const;
+export const LISTING_FIELDS = [
+  "title",
+  "bullets",
+  "description",
+  "search_terms",
+  "seo_title",
+  "seo_description",
+  "tags",
+] as const;
 export const ListingField = z.enum(LISTING_FIELDS);
 export type ListingField = z.infer<typeof ListingField>;
 
 export const STAGES = [
   "input_guardrails",
   "extraction",
+  "images",
   "keywords",
   "localization",
   "compliance",
@@ -49,6 +58,15 @@ export type Stage = z.infer<typeof Stage>;
 // ---------------------------------------------------------------------------
 // 1. What the seller gives us
 // ---------------------------------------------------------------------------
+
+/** A seller photo, downscaled in the browser and sent inline (base64, no data: prefix). */
+export const ProductImage = z.object({
+  name: z.string().max(200),
+  media_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  // ~650 KB per photo keeps 4 photos under Vercel's 4.5 MB request limit.
+  data: z.string().max(900_000, "Each photo must be under about 650 KB after resizing"),
+});
+export type ProductImage = z.infer<typeof ProductImage>;
 
 export const ProductInput = z.object({
   title_zh: z.string().trim().min(1, "Product name is required").max(300),
@@ -63,7 +81,13 @@ export const ProductInput = z.object({
   evidence: z.string().max(4000).default(""),
   brand: z.string().max(80).default(""),
   category: Category.default("other"),
-  platform: Platform.default("amazon_us"),
+  /** Marketplaces to prepare listings for. */
+  platforms: z
+    .array(Platform)
+    .min(1, "Choose at least one marketplace")
+    .default([...PLATFORMS]),
+  /** Optional product photos (max 4) for the main-image check. */
+  images: z.array(ProductImage).max(4, "Upload at most 4 photos").default([]),
   /** Optional current English listing, scored as the "before" baseline. */
   existing_listing_en: z.string().max(8000).default(""),
 });
@@ -122,6 +146,10 @@ export type ProductFacts = z.infer<typeof ProductFacts>;
 export const KeywordSet = z.object({
   primary: z.array(z.string()).describe("3-5 core phrases a US shopper would type"),
   secondary: z.array(z.string()).describe("5-15 supporting phrases and synonyms"),
+  hashtags: z
+    .array(z.string())
+    .default([])
+    .describe("4-8 TikTok hashtags without the # sign, lowercase, no spaces"),
   rationale: z.string().describe("One or two sentences on the keyword strategy"),
 });
 export type KeywordSet = z.infer<typeof KeywordSet>;
@@ -130,11 +158,27 @@ export type KeywordSet = z.infer<typeof KeywordSet>;
 // 4. Localization agent output
 // ---------------------------------------------------------------------------
 
+/**
+ * One listing for one marketplace. Fields a platform does not use stay empty
+ * ("" or []): search_terms is Amazon's backend keywords, seo_* are Shopify's
+ * search-engine listing, tags are Shopify tags or TikTok hashtags.
+ */
 export const ListingDraft = z.object({
   title: z.string(),
-  bullets: z.array(z.string()),
+  bullets: z
+    .array(z.string())
+    .describe("Amazon bullet points / TikTok selling points / Shopify highlights"),
   description: z.string(),
-  search_terms: z.string().describe("Backend search terms, space separated"),
+  search_terms: z
+    .string()
+    .default("")
+    .describe("Amazon backend search terms, space separated; empty elsewhere"),
+  seo_title: z.string().default("").describe("Shopify SEO page title; empty elsewhere"),
+  seo_description: z.string().default("").describe("Shopify SEO meta description; empty elsewhere"),
+  tags: z
+    .array(z.string())
+    .default([])
+    .describe("Shopify tags or TikTok hashtags; empty for Amazon"),
 });
 export type ListingDraft = z.infer<typeof ListingDraft>;
 
@@ -235,19 +279,101 @@ export const JudgeVerdict = z.object({
 export type JudgeVerdict = z.infer<typeof JudgeVerdict>;
 
 // ---------------------------------------------------------------------------
-// 7. Whole pipeline result
+// 7. Photos: what the vision check found (only when the seller uploads photos)
 // ---------------------------------------------------------------------------
 
-export const PipelineResult = z.object({
+/** Output contract of the image agent for one photo. */
+export const ImageObservation = z.object({
+  index: z.number().int().describe("0-based position of the photo in the upload"),
+  shows: z.string().describe("One sentence: what the photo shows"),
+  background: z.enum(["pure_white", "light_plain", "busy", "unknown"]),
+  has_text_or_logo: z
+    .boolean()
+    .describe("Text, logos, badges or graphics added on top of the photo"),
+  has_watermark: z.boolean(),
+  product_fill: z
+    .enum(["small", "good", "cropped", "unknown"])
+    .describe("How much of the frame the product fills"),
+  multiple_items_or_props: z
+    .boolean()
+    .describe("Other objects, props or several products in frame"),
+  quality_issues: z
+    .array(z.string())
+    .describe("Blur, poor lighting, low resolution, shadows; max 3"),
+  alt_text: z.string().describe("Concise alt text in English, max 125 characters"),
+});
+export type ImageObservation = z.infer<typeof ImageObservation>;
+
+export const ImageAnalysis = z.object({
+  images: z.array(ImageObservation),
+  suggested_main_index: z
+    .number()
+    .int()
+    .nullable()
+    .describe("Best photo for the main image, or null"),
+});
+export type ImageAnalysis = z.infer<typeof ImageAnalysis>;
+
+export const ImageReport = z.object({
+  analysis: ImageAnalysis.nullable(),
+  /** Per platform: is the suggested main photo acceptable as the main image, and why not. */
+  main_image: z.array(
+    z.object({
+      platform: Platform,
+      index: z.number().int().nullable(),
+      ok: z.boolean(),
+      issues: z.array(z.string()),
+    }),
+  ),
+});
+export type ImageReport = z.infer<typeof ImageReport>;
+
+// ---------------------------------------------------------------------------
+// 8. Per-marketplace output: the fields of that site's "add product" form
+// ---------------------------------------------------------------------------
+
+export const PublishField = z.object({
+  key: z.string(),
+  label: z.string(),
+  value: z.string(),
+  required: z.boolean(),
+  /** generated = written by ShelfPass · fact = from the seller's input · seller = the seller must fill it in */
+  source: z.enum(["generated", "fact", "seller"]),
+  status: z.enum(["ok", "warning", "missing"]),
+  note: z.string(),
+});
+export type PublishField = z.infer<typeof PublishField>;
+
+export const ImageGuidance = z.object({
+  main_image_rules: z.array(z.string()),
+  gallery: z.string(),
+  shot_list: z.array(z.string()),
+});
+export type ImageGuidance = z.infer<typeof ImageGuidance>;
+
+export const ChannelResult = z.object({
   platform: Platform,
-  facts: ProductFacts,
-  keywords: KeywordSet,
   draft: ListingDraft,
   listing: ListingDraft,
   validation: ValidationReport,
-  compliance: ComplianceReport,
   gate: GateDecision,
   score: QualityScore,
+  fields: z.array(PublishField),
+  images: ImageGuidance,
+});
+export type ChannelResult = z.infer<typeof ChannelResult>;
+
+// ---------------------------------------------------------------------------
+// 9. Whole pipeline result: one report, one section per marketplace
+// ---------------------------------------------------------------------------
+
+export const PipelineResult = z.object({
+  platforms: z.array(Platform),
+  facts: ProductFacts,
+  keywords: KeywordSet,
+  channels: z.array(ChannelResult),
+  compliance: ComplianceReport,
+  images: ImageReport,
   baseline_score: QualityScore.nullable(),
   warnings: z.array(z.string()),
 });

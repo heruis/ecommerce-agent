@@ -1,9 +1,9 @@
 {
-  "name": "listwise-ai",
+  "name": "shelfpass",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ListWise AI - agentic listing localization & compliance for cross-border sellers",
+  "description": "ShelfPass - agentic listing localization & compliance for cross-border sellers",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

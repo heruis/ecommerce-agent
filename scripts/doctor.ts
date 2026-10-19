@@ -148,7 +148,7 @@ async function main() {
 
 main().then(() => {
   const icon = { ok: "✓", warn: "!", fail: "✕" };
-  console.log("\nListWise doctor\n");
+  console.log("\nShelfPass doctor\n");
   for (const r of results)
     console.log(`${icon[r.status]} ${r.name}${r.detail ? ` — ${r.detail}` : ""}`);
   const failed = results.filter((r) => r.status === "fail").length;

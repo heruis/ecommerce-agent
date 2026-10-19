@@ -3,12 +3,14 @@ import {
   type ClaimAssessment,
   type ListingDraft,
   type ListingField,
+  type Platform,
   type PolicyRetriever,
   type ProductFacts,
   type ProductInput,
 } from "@/lib/contracts";
 import { runToolLoop, type AgentContext } from "@/lib/harness";
 import { asSellerData } from "@/lib/guardrails/input";
+import { platformLabel } from "@/lib/rules";
 import { renderFacts } from "../shared/seller-input";
 import { complianceCandidates, complianceMock } from "./mock";
 import { COMPLIANCE_SYSTEM } from "./prompt";
@@ -16,23 +18,28 @@ import { lookupEvidenceTool, searchPolicyTool, type RetrievalLog } from "./tools
 
 /**
  * Stage 4 — Compliance agent (smart tier, agentic RAG tool loop).
+ * One review covers every channel's draft, so a claim is judged once and the
+ * same verdict is applied on Amazon, TikTok Shop and Shopify.
  * Every claim gets a status, evidence, policy citations and an action.
  */
 export async function runCompliance(
   ctx: AgentContext,
   input: ProductInput,
   facts: ProductFacts,
-  draft: ListingDraft,
+  drafts: ChannelDraft[],
   retriever: PolicyRetriever,
 ): Promise<ComplianceReport> {
   const log: RetrievalLog = new Map();
-  const prescreen = complianceCandidates(draft, facts, input.evidence).map(
+  const all = drafts.map((d) => d.draft);
+  const prescreen = complianceCandidates(all, facts, input.evidence).map(
     (c) => `- "${c.text}" (${c.field}) — rule-based screen: ${c.rule.id}`,
   );
 
   const user = [
-    "Review every claim in this draft listing and every seller marketing claim.",
-    `## Draft listing\n${renderDraft(draft)}`,
+    "Review every claim in these draft listings and every seller marketing claim. The same claim can appear on several channels; assess it once.",
+    ...drafts.map(
+      (d) => `## Draft listing — ${platformLabel(d.platform)}\n${renderDraft(d.draft)}`,
+    ),
     `## Product record\n${renderFacts(facts)}`,
     asSellerData("evidence", input.evidence || "(none provided)"),
     `## Rule-based pre-screen (hints, may be incomplete)\n${prescreen.join("\n") || "- nothing flagged"}`,
@@ -46,7 +53,7 @@ export async function runCompliance(
     system: COMPLIANCE_SYSTEM,
     user,
     tools: [
-      searchPolicyTool(retriever, input.platform, log),
+      searchPolicyTool(retriever, input.platforms, log),
       lookupEvidenceTool(facts, input.evidence),
     ],
     final: {
@@ -55,10 +62,15 @@ export async function runCompliance(
       schema: ComplianceReport,
     },
     maxTurns: 6,
-    mock: complianceMock(draft, facts, input.evidence),
+    mock: complianceMock(all, facts, input.evidence),
   });
 
-  return enforceCitations(backstop(result.output, draft, facts, input.evidence), log);
+  return enforceCitations(backstop(result.output, all, facts, input.evidence), log);
+}
+
+export interface ChannelDraft {
+  platform: Platform;
+  draft: ListingDraft;
 }
 
 /** Citation integrity: drop any policy reference the agent did not actually retrieve. */
@@ -84,13 +96,13 @@ export function enforceCitations(report: ComplianceReport, log: RetrievalLog): C
  */
 export function backstop(
   report: ComplianceReport,
-  draft: ListingDraft,
+  drafts: ListingDraft[],
   facts: ProductFacts,
   evidence: string,
 ): ComplianceReport {
   const covered = report.claims.map((c) => c.claim_text.toLowerCase());
   const extra: ClaimAssessment[] = [];
-  for (const c of complianceCandidates(draft, facts, evidence)) {
+  for (const c of complianceCandidates(drafts, facts, evidence)) {
     if (c.field === "source") continue;
     const t = c.text.toLowerCase();
     if (covered.some((x) => x.includes(t) || t.includes(x))) continue;
@@ -116,6 +128,11 @@ function renderDraft(d: ListingDraft): string {
     `title: ${d.title}`,
     ...d.bullets.map((b, i) => `bullet ${i + 1}: ${b}`),
     `description: ${d.description}`,
-    `search_terms: ${d.search_terms}`,
-  ].join("\n");
+    d.search_terms && `search_terms: ${d.search_terms}`,
+    d.seo_title && `seo_title: ${d.seo_title}`,
+    d.seo_description && `seo_description: ${d.seo_description}`,
+    d.tags.length > 0 && `tags: ${d.tags.join(", ")}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

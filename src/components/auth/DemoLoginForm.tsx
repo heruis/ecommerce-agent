@@ -7,7 +7,7 @@ import { Button, Input, Label } from "@/components/ui";
 /** DATA_MODE=memory: sign in with only an email address. */
 export function DemoLoginForm({ next }: { next: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("demo@listwise.dev");
+  const [email, setEmail] = useState("demo@shelfpass.dev");
   const [error, setError] = useState<string | null>(null);
   async function submit(e: React.FormEvent) {
     e.preventDefault();

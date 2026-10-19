@@ -1,6 +1,6 @@
 ---
 name: write-prd
-description: Write a PRD or feature spec for ListWise AI from a feature name or idea. Use when asked to spec, scope or write requirements for a feature (e.g. "/write-prd TikTok Shop support").
+description: Write a PRD or feature spec for ShelfPass from a feature name or idea. Use when asked to spec, scope or write requirements for a feature (e.g. "/write-prd regenerate one field").
 ---
 
 # Write a PRD

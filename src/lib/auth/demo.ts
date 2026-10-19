@@ -5,7 +5,7 @@ import type { SessionUser } from "@/lib/contracts";
  * Lets the whole sign-in -> run -> pay journey work locally with no Supabase.
  * Never used when DATA_MODE=supabase.
  */
-export const DEMO_COOKIE = "lw_demo_user";
+export const DEMO_COOKIE = "sp_demo_user";
 
 export function demoUserFromEmail(email: string): SessionUser {
   const normalized = email.trim().toLowerCase();

@@ -12,7 +12,7 @@ export default function MockCheckoutPage() {
         <p className="text-xs uppercase tracking-wide text-muted">
           Mock checkout · no real payment
         </p>
-        <h1 className="text-xl font-semibold">ListWise Pro</h1>
+        <h1 className="text-xl font-semibold">ShelfPass Pro</h1>
         <p className="text-2xl font-semibold">
           $9.99<span className="text-base font-normal text-muted">/month</span>
         </p>

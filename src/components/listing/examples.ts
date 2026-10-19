@@ -12,7 +12,6 @@ export const EXAMPLES: { label: string; input: ProductInputDraft }[] = [
       evidence: "",
       brand: "",
       category: "sports_outdoors",
-      platform: "amazon_us",
       existing_listing_en:
         "Silicone Folding Cup Travel Cup FDA Approved 100% Safe Best Seller\n- good quality silicone cup\n- easy carry folding cup",
     },
@@ -27,7 +26,6 @@ export const EXAMPLES: { label: string; input: ProductInputDraft }[] = [
       evidence: "",
       brand: "",
       category: "home_kitchen",
-      platform: "amazon_us",
       existing_listing_en: "",
     },
   },

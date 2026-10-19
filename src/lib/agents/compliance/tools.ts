@@ -8,7 +8,7 @@ export type RetrievalLog = Map<string, RetrievedChunk>;
 
 export function searchPolicyTool(
   retriever: PolicyRetriever,
-  platform: Platform,
+  platforms: readonly Platform[],
   log: RetrievalLog,
 ) {
   return defineTool({
@@ -18,7 +18,7 @@ export function searchPolicyTool(
     schema: z.object({ query: z.string().describe("Short, specific search query in English") }),
     maxCalls: 4,
     run: async ({ query }) => {
-      const hits = await retriever.search(query, { k: 3, platform });
+      const hits = await retriever.search(query, { k: 3, platforms });
       for (const h of hits) log.set(h.chunk_id, h);
       if (hits.length === 0)
         return { results: [], note: "No matching policy. Try different words or stop searching." };

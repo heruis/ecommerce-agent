@@ -16,7 +16,13 @@ export function checkListingTool(platform: Platform, opts: { brand: string; evid
     maxCalls: 4,
     run: async (draft) => {
       const report = validateListing(draft, platform, { brand: opts.brand });
-      const text = [draft.title, ...draft.bullets, draft.description].join("\n");
+      const text = [
+        draft.title,
+        ...draft.bullets,
+        draft.description,
+        draft.seo_title,
+        draft.seo_description,
+      ].join("\n");
       const risky = scanClaims(text, opts.evidence)
         .filter((h) => h.status !== "verified")
         .map((h) => ({ phrase: h.match, rule: h.rule.id, guidance: h.rule.guidance }));

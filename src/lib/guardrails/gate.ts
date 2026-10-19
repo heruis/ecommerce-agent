@@ -33,25 +33,28 @@ export function applyGate(args: {
 }): GateResult {
   const fixes: string[] = [];
   const review: string[] = [];
-  let listing: ListingDraft = { ...args.draft, bullets: [...args.draft.bullets] };
+  let listing: ListingDraft = {
+    ...args.draft,
+    bullets: [...args.draft.bullets],
+    tags: [...args.draft.tags],
+  };
 
-  // 1. Agent-proposed actions
+  // 1. Agent-proposed actions. One compliance review covers every channel, so
+  //    a verdict applies wherever the phrase appears, not only in claim.field.
   for (const claim of args.compliance.claims) {
-    if (claim.action === "ask_seller") {
+    const present = allText(listing).toLowerCase().includes(claim.claim_text.toLowerCase());
+    if (claim.action === "ask_seller" && (present || claim.field === "source")) {
       review.push(`Confirm you have evidence for "${claim.claim_text}" or remove it.`);
     }
-    if (claim.field === "source") continue;
+    if (claim.field === "source" || !present) continue;
     if (claim.action === "rewrite" && claim.suggested_fix) {
-      const before = JSON.stringify(listing);
-      listing = mapFields(listing, claim.field, (t) =>
+      listing = mapText(listing, (t) =>
         replaceCaseAware(t, claim.claim_text, claim.suggested_fix!),
       );
-      if (JSON.stringify(listing) !== before)
-        fixes.push(`Rewrote "${claim.claim_text}" → "${claim.suggested_fix}".`);
+      fixes.push(`Rewrote "${claim.claim_text}" → "${claim.suggested_fix}".`);
     } else if (claim.action === "remove") {
-      const before = JSON.stringify(listing);
-      listing = mapFields(listing, claim.field, (t) => stripPhrase(t, claim.claim_text));
-      if (JSON.stringify(listing) !== before) fixes.push(`Removed "${claim.claim_text}".`);
+      listing = mapText(listing, (t) => stripPhrase(t, claim.claim_text));
+      fixes.push(`Removed "${claim.claim_text}".`);
     }
   }
 
@@ -67,23 +70,21 @@ export function applyGate(args: {
     }
     return out;
   };
+  listing = mapText(listing, sweep);
   listing = {
-    title: sweep(listing.title),
-    bullets: listing.bullets.map(sweep),
-    description: sweep(listing.description),
-    search_terms: sweep(listing.search_terms),
+    ...listing,
+    bullets: listing.bullets.map(tidyBullet).filter((b) => b.length > 0),
+    tags: listing.tags.map((t) => t.trim()).filter((t) => t.length > 0),
   };
-  listing = { ...listing, bullets: listing.bullets.map(tidyBullet).filter((b) => b.length > 0) };
 
   // 3. Re-validate
   const validation = validateListing(listing, args.platform, { brand: args.brand });
   const errors = validation.violations.filter((v) => v.severity === "error");
   for (const e of errors) review.push(e.message);
 
-  const stillRestricted = scanClaims(
-    [listing.title, ...listing.bullets, listing.description, listing.search_terms].join("\n"),
-    args.evidence,
-  ).filter((h) => h.status === "restricted");
+  const stillRestricted = scanClaims(allText(listing), args.evidence).filter(
+    (h) => h.status === "restricted",
+  );
 
   return {
     listing,
@@ -96,19 +97,29 @@ export function applyGate(args: {
   };
 }
 
-function mapFields(l: ListingDraft, field: string, fn: (t: string) => string): ListingDraft {
-  switch (field) {
-    case "title":
-      return { ...l, title: fn(l.title) };
-    case "bullets":
-      return { ...l, bullets: l.bullets.map(fn) };
-    case "description":
-      return { ...l, description: fn(l.description) };
-    case "search_terms":
-      return { ...l, search_terms: fn(l.search_terms) };
-    default:
-      return l;
-  }
+/** Apply a text transform to every shopper-visible field. */
+function mapText(l: ListingDraft, fn: (t: string) => string): ListingDraft {
+  return {
+    title: fn(l.title),
+    bullets: l.bullets.map(fn),
+    description: fn(l.description),
+    search_terms: fn(l.search_terms),
+    seo_title: fn(l.seo_title),
+    seo_description: fn(l.seo_description),
+    tags: l.tags.map(fn),
+  };
+}
+
+export function allText(l: ListingDraft): string {
+  return [
+    l.title,
+    ...l.bullets,
+    l.description,
+    l.search_terms,
+    l.seo_title,
+    l.seo_description,
+    ...l.tags,
+  ].join("\n");
 }
 
 /** Replace a phrase case-insensitively, capitalizing the fix at a sentence or label start. */

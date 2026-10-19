@@ -3,12 +3,12 @@
 // This is the "collision avoidance" guardrail for agent teams (course Module 4):
 // five people run Claude Code in parallel, and no agent may edit another
 // workstream's files. The branch name decides the workstream (ws1/..., ws2/...).
-// Disable for one session with LISTWISE_OWNERSHIP=off (then explain why in your PR).
+// Disable for one session with SHELFPASS_OWNERSHIP=off (then explain why in your PR).
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { block, readHookInput } from "./read-input.mjs";
 
-if (process.env.LISTWISE_OWNERSHIP === "off") process.exit(0);
+if (process.env.SHELFPASS_OWNERSHIP === "off") process.exit(0);
 
 const input = await readHookInput();
 const target = input.tool_input?.file_path ?? input.tool_input?.notebook_path;

@@ -1,5 +1,5 @@
-import type { PipelineResult, ProductInputDraft } from "@/lib/contracts";
-import { CLAIM_RULES } from "@/lib/guardrails";
+import type { ProductInputDraft } from "@/lib/contracts";
+import { allText, CLAIM_RULES } from "@/lib/guardrails";
 import type { RunOutcome } from "@/lib/pipeline";
 
 /**
@@ -28,6 +28,7 @@ export interface CaseResult {
     "outcome" | "process" | "output_contract" | "efficiency",
     { pass: boolean; notes: string[] }
   >;
+  /** Lowest channel score (a case is only as good as its weakest channel). */
   score: number | null;
   llm_calls: number;
   latency_ms: number;
@@ -54,13 +55,36 @@ export function checkCase(c: GoldenCase, outcome: RunOutcome, latencyMs: number)
   } else if (!r) {
     fail("outcome", `run failed: ${outcome.error?.code} ${outcome.error?.message}`);
   } else {
-    const text = listingText(r).toLowerCase();
-    for (const f of e.required_facts ?? []) {
-      if (!text.includes(f.contains.toLowerCase()))
-        fail("outcome", `listing does not mention ${f.attribute} "${f.contains}"`);
+    // Outcome and output-contract checks apply to EVERY channel's listing.
+    for (const ch of r.channels) {
+      const label = ch.platform;
+      const text = allText(ch.listing).toLowerCase();
+      for (const f of e.required_facts ?? []) {
+        if (!text.includes(f.contains.toLowerCase()))
+          fail("outcome", `${label}: listing does not mention ${f.attribute} "${f.contains}"`);
+      }
+      if (e.min_score !== undefined && ch.score.total < e.min_score)
+        fail("outcome", `${label}: score ${ch.score.total} < ${e.min_score}`);
+      for (const phrase of e.must_not_appear ?? []) {
+        if (text.includes(phrase.toLowerCase()))
+          fail("output_contract", `${label}: final listing contains "${phrase}"`);
+      }
+      if (ch.gate.decision !== "pass")
+        fail("output_contract", `${label}: policy gate failed: ${ch.gate.needs_review.join("; ")}`);
+      if (!ch.validation.passed) fail("output_contract", `${label}: platform validation failed`);
+      const missing = ch.fields.filter((f) => f.required && f.source === "generated" && !f.value);
+      if (missing.length)
+        fail(
+          "output_contract",
+          `${label}: empty generated fields ${missing.map((f) => f.key).join(", ")}`,
+        );
     }
-    if (e.min_score !== undefined && r.score.total < e.min_score)
-      fail("outcome", `score ${r.score.total} < ${e.min_score}`);
+    const expected = c.input.platforms ?? ["amazon_us", "tiktok_us", "shopify"];
+    if (r.channels.map((ch) => ch.platform).join() !== expected.join())
+      fail(
+        "output_contract",
+        `channels ${r.channels.map((ch) => ch.platform).join()} != ${expected.join()}`,
+      );
 
     for (const ruleId of e.must_flag ?? []) {
       const rule = CLAIM_RULES.find((x) => x.id === ruleId);
@@ -77,14 +101,6 @@ export function checkCase(c: GoldenCase, outcome: RunOutcome, latencyMs: number)
     );
     if (uncited.length)
       fail("process", `${uncited.length} restricted claim(s) without a policy citation`);
-
-    for (const phrase of e.must_not_appear ?? []) {
-      if (text.includes(phrase.toLowerCase()))
-        fail("output_contract", `final listing contains "${phrase}"`);
-    }
-    if (r.gate.decision !== "pass")
-      fail("output_contract", `policy gate failed: ${r.gate.needs_review.join("; ")}`);
-    if (!r.validation.passed) fail("output_contract", "platform validation failed");
   }
 
   if (e.max_llm_calls !== undefined && usage.llm_calls > e.max_llm_calls) {
@@ -95,18 +111,9 @@ export function checkCase(c: GoldenCase, outcome: RunOutcome, latencyMs: number)
     id: c.id,
     pass: Object.values(d).every((x) => x.pass),
     dimensions: d,
-    score: r?.score.total ?? null,
+    score: r && r.channels.length ? Math.min(...r.channels.map((ch) => ch.score.total)) : null,
     llm_calls: usage.llm_calls,
     latency_ms: latencyMs,
     cost_usd: usage.cost_usd,
   };
-}
-
-function listingText(r: PipelineResult): string {
-  return [
-    r.listing.title,
-    ...r.listing.bullets,
-    r.listing.description,
-    r.listing.search_terms,
-  ].join("\n");
 }

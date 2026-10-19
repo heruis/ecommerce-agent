@@ -5,7 +5,7 @@
  * (in-memory / mock) and a production implementation owned by a workstream.
  * Routes and agents depend on these interfaces, never on a concrete vendor SDK.
  */
-import type { ListingDraft, PolicyRef, ProductInput } from "./schemas";
+import type { ListingDraft, Platform, PolicyRef, ProductInput } from "./schemas";
 import type { Listing, ListingSummary, Plan, Profile, RunRecord } from "./records";
 import type { PipelineResult } from "./schemas";
 
@@ -54,10 +54,18 @@ export interface Repo {
   markListingRunning(userId: string, listingId: string, runId: string): Promise<void>;
   saveRun(userId: string, run: RunRecord, result: PipelineResult | null): Promise<void>;
   getRun(userId: string, runId: string): Promise<RunRecord | null>;
-  saveEdits(userId: string, listingId: string, edited: ListingDraft): Promise<Listing>;
+  /** Save the seller's edited copy for one channel (other channels keep theirs). */
+  saveEdits(
+    userId: string,
+    listingId: string,
+    platform: Platform,
+    edited: ListingDraft,
+  ): Promise<Listing>;
 
   /** Returns true the first time an event id is seen, false for duplicates. */
   recordStripeEvent(eventId: string, type: string): Promise<boolean>;
+  /** Forget an event whose handler failed, so Stripe's retry is applied. */
+  releaseStripeEvent(eventId: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -80,5 +88,8 @@ export interface RetrievedChunk extends PolicyRef {
 
 export interface PolicyRetriever {
   readonly kind: "lexical" | "vector";
-  search(query: string, opts?: { k?: number; platform?: string }): Promise<RetrievedChunk[]>;
+  search(
+    query: string,
+    opts?: { k?: number; platforms?: readonly string[] },
+  ): Promise<RetrievedChunk[]>;
 }

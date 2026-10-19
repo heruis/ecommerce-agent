@@ -16,7 +16,7 @@ export class VectorRetriever implements PolicyRetriever {
 
   async search(
     query: string,
-    opts: { k?: number; platform?: string } = {},
+    opts: { k?: number; platforms?: readonly string[] } = {},
   ): Promise<RetrievedChunk[]> {
     void query;
     void opts;

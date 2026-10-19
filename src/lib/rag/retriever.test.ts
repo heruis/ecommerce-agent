@@ -19,7 +19,7 @@ describe("policy knowledge base", () => {
     ["biodegradable eco-friendly", "ftc-green-guides"],
     ["search terms bytes", "amazon-search-terms"],
   ])("lexical retrieval ranks the right doc first for %s", async (query, doc) => {
-    const hits = await new LexicalRetriever().search(query, { k: 3, platform: "amazon_us" });
+    const hits = await new LexicalRetriever().search(query, { k: 3, platforms: ["amazon_us"] });
     expect(hits[0]?.doc_id).toBe(doc);
   });
 });

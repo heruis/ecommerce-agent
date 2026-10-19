@@ -22,16 +22,16 @@ export class LexicalRetriever implements PolicyRetriever {
 
   async search(
     query: string,
-    opts: { k?: number; platform?: string } = {},
+    opts: { k?: number; platforms?: readonly string[] } = {},
   ): Promise<RetrievedChunk[]> {
     const k = opts.k ?? 4;
     const hits = this.getIndex().search(query, k * 3);
     return hits
       .filter(
         ({ item }) =>
-          !opts.platform ||
+          !opts.platforms?.length ||
           item.platforms.includes("all") ||
-          item.platforms.includes(opts.platform),
+          item.platforms.some((p) => opts.platforms!.includes(p)),
       )
       .slice(0, k)
       .map(({ item, score }) => ({

@@ -19,7 +19,7 @@ export async function callModel(
     `${req.agent}.llm`,
     "llm",
     ctx.spanId,
-    { messages: req.messages.length, last: req.messages.at(-1) },
+    { messages: req.messages.length, last: withoutImageBytes(req.messages.at(-1)) },
     {
       agent: req.agent,
       tier: req.tier,
@@ -73,4 +73,15 @@ export function textOf(message: Anthropic.Message): string {
     .filter((b): b is Anthropic.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
+}
+
+/** Keep base64 image data out of traces: log that an image was sent, not its bytes. */
+function withoutImageBytes(message: Anthropic.MessageParam | undefined): unknown {
+  if (!message || typeof message.content === "string") return message;
+  return {
+    ...message,
+    content: message.content.map((block) =>
+      block.type === "image" ? { type: "image", source: "[image omitted from trace]" } : block,
+    ),
+  };
 }

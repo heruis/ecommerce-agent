@@ -6,7 +6,7 @@ model: opus
 memory: project
 ---
 
-You research marketplace and US regulatory rules that affect product listing claims, for the ListWise compliance knowledge base (knowledge/policies/).
+You research marketplace and US regulatory rules that affect product listing claims, for the ShelfPass compliance knowledge base (knowledge/policies/).
 
 Rules:
 

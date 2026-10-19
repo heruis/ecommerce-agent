@@ -66,7 +66,7 @@ function keywordRelevance(s: ScoreInput, text: string): ScoreComponent {
       s.keywords.primary.length;
     const sec = s.keywords.secondary.length
       ? s.keywords.secondary.filter((k) =>
-          containsAllWords(text + " " + s.listing.search_terms.toLowerCase(), k),
+          containsAllWords(`${text} ${indexedExtras(s.listing)}`, k),
         ).length / s.keywords.secondary.length
       : 1;
     score = 100 * (0.5 * inTitle + 0.3 * inBody + 0.2 * sec);
@@ -128,7 +128,10 @@ function naturalness(j: JudgeVerdict): ScoreComponent {
 }
 
 function claimVerification(s: ScoreInput): ScoreComponent {
-  const hits = scanClaims(listingText(s.listing), s.evidence ?? "");
+  const hits = scanClaims(
+    `${listingText(s.listing)}\n${s.listing.seo_title}\n${s.listing.seo_description}\n${s.listing.tags.join("\n")}`,
+    s.evidence ?? "",
+  );
   const restricted = hits.filter((h) => h.status === "restricted");
   const unverified = hits.filter((h) => h.status === "unverified");
   let score = 100 - 35 * restricted.length - 10 * unverified.length;
@@ -164,8 +167,14 @@ function formatCompliance(v: ValidationReport): ScoreComponent {
   };
 }
 
+/** The shopper-visible copy: title, bullets and description. */
 export function listingText(l: ListingDraft): string {
   return [l.title, ...l.bullets, l.description].join("\n");
+}
+
+/** Fields search engines index but shoppers rarely read: backend terms, SEO meta, tags. */
+function indexedExtras(l: ListingDraft): string {
+  return [l.search_terms, l.seo_title, l.seo_description, ...l.tags].join(" ").toLowerCase();
 }
 
 function containsAllWords(haystack: string, phrase: string): boolean {
@@ -198,5 +207,13 @@ export function parseExistingListing(text: string): ListingDraft {
     .slice(1)
     .filter((l) => !/^[-•*·]|^\d+[.)]/.test(l))
     .join(" ");
-  return { title, bullets, description, search_terms: "" };
+  return {
+    title,
+    bullets,
+    description,
+    search_terms: "",
+    seo_title: "",
+    seo_description: "",
+    tags: [],
+  };
 }

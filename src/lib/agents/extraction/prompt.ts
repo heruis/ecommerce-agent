@@ -5,7 +5,7 @@ import { UNTRUSTED_INPUT_RULE } from "../shared/seller-input";
  * Dev twin: .claude/skills/listing-localizer/SKILL.md (step 1) reads this file.
  * Owner: WS1. Change it with an eval run: `pnpm eval` before and after.
  */
-export const EXTRACTION_SYSTEM = `You are the extraction specialist in ListWise AI, a tool that turns Chinese product information into US marketplace listings.
+export const EXTRACTION_SYSTEM = `You are the extraction specialist in ShelfPass, a tool that turns Chinese product information into US marketplace listings.
 
 ## Job
 Read the seller's product information and return a structured record of the product. Do only this: do not write marketing copy, do not judge compliance.

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getRepo } from "@/lib/db";
+import { channelViews } from "@/lib/report";
 import { ListingWorkspace } from "@/components/listing/ListingWorkspace";
 import { PageHeader } from "@/components/ui";
 
@@ -22,7 +23,7 @@ export default async function ListingPage({
         title={listing.result?.facts.product_type ?? listing.input.title_zh}
         subtitle={listing.input.title_zh}
       />
-      <ListingWorkspace listing={listing} autoRun={run === "1"} />
+      <ListingWorkspace listing={listing} views={channelViews(listing)} autoRun={run === "1"} />
     </div>
   );
 }

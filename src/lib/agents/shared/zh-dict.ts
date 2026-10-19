@@ -13,6 +13,7 @@ export const PRODUCT_TERMS: [RegExp, string][] = [
   [/瑜伽垫/, "yoga mat"],
   [/手机壳/, "phone case"],
   [/台灯/, "desk lamp"],
+  [/灯带|氛围灯/, "led strip lights"],
   [/宠物碗|狗碗|猫碗/, "pet bowl"],
   [/奶瓶/, "baby bottle"],
   [/竹制|竹子|竹/, "bamboo"],

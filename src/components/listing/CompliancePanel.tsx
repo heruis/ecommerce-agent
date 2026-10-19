@@ -1,23 +1,17 @@
-import type { ComplianceReport, GateDecision } from "@/lib/contracts";
+import type { ComplianceReport } from "@/lib/contracts";
 import { Badge, Card } from "@/components/ui";
 
 const STATUS_TONE = { verified: "ok", unverified: "warn", restricted: "danger" } as const;
 
-/** Claim-by-claim verification with policy citations. Owner: WS3. */
-export function CompliancePanel({
-  report,
-  gate,
-}: {
-  report: ComplianceReport;
-  gate: GateDecision;
-}) {
+/**
+ * Claim-by-claim verification with policy citations. One review covers every
+ * channel; each channel tab shows what its policy gate fixed. Owner: WS3.
+ */
+export function CompliancePanel({ report }: { report: ComplianceReport }) {
   return (
     <Card className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold">Compliance review</h2>
-        <Badge tone={gate.decision === "pass" ? "ok" : "danger"}>
-          Policy gate: {gate.decision.toUpperCase()}
-        </Badge>
+        <h2 className="font-semibold">Claim review (all channels)</h2>
       </div>
       <p className="text-sm text-muted">{report.summary}</p>
 
@@ -38,7 +32,7 @@ export function CompliancePanel({
                   <td className="py-2 pr-3">
                     <span className="font-medium">“{c.claim_text}”</span>
                     <span className="block text-xs text-muted">
-                      {c.field === "source" ? "in your input" : `in ${c.field}`}
+                      {c.field === "source" ? "in your input" : `in ${c.field.replace("_", " ")}`}
                     </span>
                   </td>
                   <td className="py-2 pr-3">
@@ -72,31 +66,11 @@ export function CompliancePanel({
         </div>
       ) : null}
 
-      {gate.applied_fixes.length > 0 ? (
-        <div>
-          <h3 className="text-sm font-medium">Fixed automatically</h3>
-          <ul className="mt-1 list-disc pl-5 text-sm text-muted">
-            {gate.applied_fixes.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {gate.needs_review.length > 0 ? (
-        <div>
-          <h3 className="text-sm font-medium text-warn">Needs your confirmation</h3>
-          <ul className="mt-1 list-disc pl-5 text-sm">
-            {gate.needs_review.map((f) => (
-              <li key={f}>{f}</li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
       {report.uncertainty.length > 0 ? (
         <p className="text-xs text-muted">Could not verify: {report.uncertainty.join(" ")}</p>
       ) : null}
       <p className="text-xs text-muted">
-        ListWise screens for risk using summarized policies. It is not legal advice and does not
+        ShelfPass screens for risk using summarized policies. It is not legal advice and does not
         guarantee marketplace approval.
       </p>
     </Card>

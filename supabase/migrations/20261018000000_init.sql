@@ -1,4 +1,4 @@
--- ListWise AI — initial schema
+-- ShelfPass — initial schema
 -- Apply with the Supabase SQL editor (paste & run) or `supabase db push`.
 -- Owner: WS4. Change the schema only with a NEW migration file; never edit an applied one.
 

@@ -9,9 +9,9 @@ export interface BudgetLimits {
 }
 
 export const DEFAULT_RUN_LIMITS: BudgetLimits = {
-  maxLlmCalls: 24,
-  maxTotalTokens: 250_000,
-  maxCostUsd: 0.75,
+  maxLlmCalls: 40,
+  maxTotalTokens: 400_000,
+  maxCostUsd: 1.5,
   deadlineMs: 240_000,
 };
 

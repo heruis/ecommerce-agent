@@ -1,6 +1,6 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import type { z } from "zod";
-import type { Stage } from "@/lib/contracts";
+import type { Platform, Stage } from "@/lib/contracts";
 import { callModel } from "./call";
 import { AgentError, errorMessage } from "./errors";
 import type { MockResponder } from "./llm";
@@ -26,6 +26,8 @@ export function defineTool<I>(tool: HarnessTool<I>): HarnessTool<I> {
 export interface ToolLoopOptions<T> {
   agent: string;
   stage: Stage;
+  /** Marketplace this run is for, when the stage runs once per platform. */
+  platform?: Platform;
   tier: ModelTier;
   effort?: Effort;
   system: string;
@@ -174,6 +176,7 @@ export async function runToolLoop<T>(
           stage: opts.stage,
           tool: use.name,
           summary: tool.summarize ? tool.summarize(input.data) : use.name,
+          ...(opts.platform ? { platform: opts.platform } : {}),
         });
       } catch (e) {
         ctx.tracer.end(spanId, { error: errorMessage(e) });

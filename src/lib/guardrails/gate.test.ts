@@ -13,6 +13,9 @@ const draft: ListingDraft = {
   ],
   description: "A collapsible cup for travel. It is the #1 best-selling cup. ".repeat(4),
   search_terms: "foldable mug camping",
+  seo_title: "",
+  seo_description: "",
+  tags: [],
 };
 
 const report: ComplianceReport = {
@@ -71,6 +74,26 @@ describe("applyGate (layer 3 output gate)", () => {
 
   it("re-validates after fixing", () => {
     expect(r.validation.violations.filter((v) => v.severity === "error")).toHaveLength(0);
+  });
+});
+
+describe("applyGate on Shopify fields", () => {
+  it("sweeps SEO fields and tags too", () => {
+    const r = applyGate({
+      draft: {
+        ...draft,
+        seo_title: "FDA Approved Silicone Travel Cup",
+        seo_description: "The #1 best-selling travel cup.",
+        tags: ["travel cup", "antibacterial"],
+      },
+      compliance: { summary: "", uncertainty: [], claims: [] },
+      platform: "shopify",
+      brand: "",
+      evidence: "",
+    });
+    const seo = `${r.listing.seo_title} ${r.listing.seo_description} ${r.listing.tags.join(" ")}`;
+    expect(seo).not.toMatch(/FDA approved|best-selling|#1|antibacterial/i);
+    expect(r.listing.tags).toEqual(["travel cup"]);
   });
 });
 

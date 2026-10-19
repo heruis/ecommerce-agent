@@ -37,6 +37,7 @@ const NOUNS = new Set([
   "charging cable",
   "power bank",
   "earbuds",
+  "led strip lights",
 ]);
 
 /**
@@ -85,6 +86,14 @@ export function mockExtraction(input: ProductInput): ProductFacts {
   if (dims) {
     const unit = /mm|毫米/.test(dims[4]) ? "mm" : "cm";
     add("dimensions", [dims[1], dims[2], dims[3]].filter(Boolean).join(" x "), unit, dims[0]);
+  }
+
+  const length =
+    text.match(/(?:长度|长)[：:\s]*(\d+(?:\.\d+)?)\s*(m|米|cm|厘米)(?![a-z])/i) ??
+    text.match(/(\d+(?:\.\d+)?)\s*米/);
+  if (length) {
+    const unit = /cm|厘米/.test(length[2] ?? "") ? "cm" : "m";
+    add("length", length[1], unit, length[0]);
   }
 
   const folded = text.match(/折叠后[^\d]{0,6}(\d+(?:\.\d+)?)\s*(cm|厘米)/);

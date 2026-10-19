@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CATEGORIES, type ProductInputDraft } from "@/lib/contracts";
+import { CATEGORIES, PLATFORMS, type Platform, type ProductInputDraft } from "@/lib/contracts";
 import { Button, Card, Input, Label, Spinner, Textarea } from "@/components/ui";
 import { EXAMPLES } from "./examples";
+import { PhotoPicker } from "./PhotoPicker";
 
 const EMPTY: ProductInputDraft = {
   title_zh: "",
@@ -13,9 +14,28 @@ const EMPTY: ProductInputDraft = {
   evidence: "",
   brand: "",
   category: "other",
-  platform: "amazon_us",
+  platforms: [...PLATFORMS],
+  images: [],
   existing_listing_en: "",
 };
+
+const CHANNELS: { id: Platform; label: string; hint: string }[] = [
+  {
+    id: "amazon_us",
+    label: "Amazon US",
+    hint: "title, 5 bullets, description, backend search terms",
+  },
+  {
+    id: "tiktok_us",
+    label: "TikTok Shop US",
+    hint: "short title, selling points, description, hashtags",
+  },
+  {
+    id: "shopify",
+    label: "Shopify store",
+    hint: "title, description, SEO title & meta description, tags",
+  },
+];
 
 /** Step 1 of the journey: the seller pastes Chinese product information. Owner: WS3. */
 export function ListingForm({ credits }: { credits: number }) {
@@ -27,6 +47,14 @@ export function ListingForm({ credits }: { credits: number }) {
 
   const set = (key: keyof ProductInputDraft) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+  const platforms = form.platforms ?? [];
+  const toggle = (p: Platform) =>
+    setForm((f) => {
+      const current = f.platforms ?? [];
+      const next = current.includes(p) ? current.filter((x) => x !== p) : [...current, p];
+      // Keep the canonical order so report tabs are stable.
+      return { ...f, platforms: PLATFORMS.filter((x) => next.includes(x)) };
+    });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +75,10 @@ export function ListingForm({ credits }: { credits: number }) {
     if (body?.error?.fields) {
       setErrors(
         Object.fromEntries(
-          body.error.fields.map((f: { path: string; message: string }) => [f.path, f.message]),
+          body.error.fields.map((f: { path: string; message: string }) => [
+            f.path.split(".")[0],
+            f.message,
+          ]),
         ),
       );
     }
@@ -114,7 +145,7 @@ export function ListingForm({ credits }: { credits: number }) {
             placeholder="e.g. SGS test report: BPA-free, LFGB compliant (report no. ...)"
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="brand">Brand</Label>
             <Input id="brand" value={form.brand} onChange={set("brand")} />
@@ -134,21 +165,52 @@ export function ListingForm({ credits }: { credits: number }) {
               ))}
             </select>
           </div>
-          <div>
-            <Label htmlFor="platform">Marketplace</Label>
-            <select
-              id="platform"
-              value={form.platform}
-              onChange={set("platform")}
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm"
-            >
-              <option value="amazon_us">Amazon US</option>
-              <option value="tiktok_us" disabled>
-                TikTok Shop US (coming soon)
-              </option>
-            </select>
-          </div>
         </div>
+      </Card>
+
+      <Card className="space-y-3">
+        <div>
+          <h2 className="font-semibold">Where will you sell it?</h2>
+          <p className="text-sm text-muted">
+            You get one report with the exact fields each site&apos;s &quot;add product&quot; form
+            asks for.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {CHANNELS.map((c) => (
+            <label
+              key={c.id}
+              className="flex cursor-pointer gap-3 rounded-lg border border-border p-3 has-[:checked]:border-brand has-[:checked]:bg-brand/5"
+            >
+              <input
+                type="checkbox"
+                checked={platforms.includes(c.id)}
+                onChange={() => toggle(c.id)}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-sm font-medium">{c.label}</span>
+                <span className="block text-xs text-muted">{c.hint}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+        <FieldError message={errors.platforms} />
+      </Card>
+
+      <Card className="space-y-3">
+        <div>
+          <h2 className="font-semibold">Product photos (optional)</h2>
+          <p className="text-sm text-muted">
+            Up to 4. We check them against each site&apos;s main-image rules and suggest a shot
+            list. Put the photo you want as the main image first.
+          </p>
+        </div>
+        <PhotoPicker
+          value={form.images ?? []}
+          onChange={(images) => setForm((f) => ({ ...f, images }))}
+        />
+        <FieldError message={errors.images} />
       </Card>
 
       <Card className="space-y-2">
@@ -165,8 +227,8 @@ export function ListingForm({ credits }: { credits: number }) {
 
       {message ? <p className="text-sm text-danger">{message}</p> : null}
       <div className="flex items-center gap-4">
-        <Button type="submit" disabled={busy || credits <= 0}>
-          {busy ? <Spinner /> : null} Generate listing (1 run)
+        <Button type="submit" disabled={busy || credits <= 0 || platforms.length === 0}>
+          {busy ? <Spinner /> : null} Generate report (1 run)
         </Button>
         <span className="text-sm text-muted">
           {credits} run{credits === 1 ? "" : "s"} left

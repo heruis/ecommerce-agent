@@ -15,7 +15,7 @@ export function renderSellerInput(input: ProductInput): string {
   if (input.specs_zh) parts.push(asSellerData("specs", input.specs_zh));
   if (input.brand) parts.push(asSellerData("brand", input.brand));
   parts.push(asSellerData("evidence", input.evidence || "(none provided)"));
-  parts.push(`Category hint: ${input.category}. Target marketplace: ${input.platform}.`);
+  parts.push(`Category hint: ${input.category}. Target channels: ${input.platforms.join(", ")}.`);
   return parts.join("\n\n");
 }
 

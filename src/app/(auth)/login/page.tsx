@@ -18,7 +18,7 @@ export default async function LoginPage({
   return (
     <div className="mx-auto max-w-sm">
       <Card className="space-y-4">
-        <h1 className="text-xl font-semibold">Sign in to ListWise</h1>
+        <h1 className="text-xl font-semibold">Sign in to ShelfPass</h1>
         {demo ? <DemoLoginForm next={target} /> : <SupabaseAuthForm next={target} />}
       </Card>
     </div>

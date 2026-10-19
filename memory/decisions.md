@@ -42,3 +42,19 @@ These feed the write-up's "justified design decisions" (rubric: engineering qual
 ### D-010 Pricing: 3 free runs, Pro $9.99/month with 50 runs
 
 **Context:** Unlimited plans let API cost run away. **Decision:** Fair-use cap, atomic credit decrement in Postgres, refund on our own failures, credits granted only by the verified, idempotent Stripe webhook. **Consequences:** Revisit the cap with real cost-per-run data from traces.
+
+### D-011 A publish-ready report instead of direct publishing
+
+**Context:** Posting listings straight to Amazon (SP-API), TikTok Shop (Partner API) and Shopify (Admin API) needs developer registration and app review that take weeks; the capstone is due in one week. **Decision:** ShelfPass outputs a report that maps every generated value onto each site's "add product" form, field by field, with copy buttons, per-channel CSV/TXT, a JSON of all fields, a Markdown report and a printable page. Fields only the seller can supply (GTIN, price, country of origin) are marked "you fill in". **Alternatives:** Shopify-only live publishing (still needs an app install flow and OAuth; not worth the week). **Consequences:** No third-party credentials to store; the report is the product's output and the demo's centerpiece. Direct publishing stays on the roadmap. Owner: lead. 2026-10-19.
+
+### D-012 Multi-channel: shared facts and keywords, one localization agent per channel
+
+**Context:** Amazon, TikTok Shop and Shopify want different copy (bullets + backend terms; short title + hashtags; SEO title + meta description + tags). **Decision:** Extraction, keywords and compliance run once; localization runs one agent per selected channel in parallel; the output gate, judge, score and publish fields run per channel. Each channel is a rule config (`src/lib/rules/<channel>.ts`) that drives the prompt, the `check_listing` validator and the form-field map, so they cannot disagree. One compliance review covers all drafts and its verdicts apply wherever a phrase appears. **Consequences:** ~13 model calls for three channels in mock mode (budget raised to 40 calls / $1.50); adding a channel is a config file plus form fields, not a new agent.
+
+### D-013 Supabase access through the server's secret key, with explicit user filters
+
+**Context:** The run endpoint keeps writing after the browser's cookies are out of reach (streamed response), and the Stripe webhook has no session at all. **Decision:** `SupabaseRepo` uses the server-only secret-key client for every query and filters every read and write by `user_id` in code. RLS stays enabled as the second wall for any future browser-side access. **Alternatives:** User-scoped client with RLS for reads (two clients, cookie edge cases inside streams). **Consequences:** Ownership checks are code we test (the memory repo is the spec); the secret key never leaves the server.
+
+### D-014 Photos: downscale in the browser, the model describes, code decides
+
+**Context:** Sellers want main-image feedback; Vercel caps request bodies at 4.5 MB. **Decision:** Up to 4 photos are downscaled client-side to 1024 px JPEG (≤ ~650 KB each) and sent inline; the input guardrail checks each file's signature. A fast-tier vision call returns observations only (background, text/logo, watermark, fill, props, alt text); code turns them into a per-channel main-image verdict. **Consequences:** Cheap and explainable; no object storage needed for the capstone (photos live in the listing's input JSON). Move to Supabase Storage if photos grow.

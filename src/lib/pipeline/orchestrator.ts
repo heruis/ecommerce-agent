@@ -1,6 +1,9 @@
 import {
   ProductInput,
+  type ChannelResult,
+  type ImageAnalysis,
   type ListingDraft,
+  type Platform,
   type PipelineEvent,
   type PipelineResult,
   type PolicyRetriever,
@@ -9,7 +12,14 @@ import {
   type RunRecord,
   type Stage,
 } from "@/lib/contracts";
-import { runCompliance, runExtraction, runJudge, runKeywords, runLocalization } from "@/lib/agents";
+import {
+  runCompliance,
+  runExtraction,
+  runImageCheck,
+  runJudge,
+  runKeywords,
+  runLocalization,
+} from "@/lib/agents";
 import { applyGate, redactForLog, screenInput } from "@/lib/guardrails";
 import {
   AgentError,
@@ -24,7 +34,8 @@ import {
   type LlmClient,
 } from "@/lib/harness";
 import { getRetriever } from "@/lib/rag";
-import { validateListing } from "@/lib/rules";
+import { buildPublishFields, imageGuidance, mainImageVerdicts } from "@/lib/report";
+import { platformLabel, validateListing } from "@/lib/rules";
 import { computeScore, parseExistingListing } from "@/lib/scoring";
 import { newId, nowIso } from "@/lib/utils/ids";
 
@@ -48,8 +59,10 @@ export interface RunOutcome {
  * specialist (spoke) exactly the context it needs. Agents never talk to each
  * other; every hand-off goes through here (course Module 2: hub-and-spoke).
  *
- *   input_guardrails -> extraction -> keywords -> localization -> compliance
- *   -> output_gate -> scoring        (baseline scoring runs in parallel)
+ *   input_guardrails -> extraction -> [images ‖ keywords]
+ *   -> localization (one agent per channel, in parallel) -> compliance (one
+ *   review across all drafts) -> output_gate (per channel) -> scoring + publish
+ *   fields (per channel)              (baseline scoring runs in parallel)
  *
  * Owner: WS1. Stage order and hand-offs are documented in docs/AGENT_DESIGN.md.
  */
@@ -117,12 +130,14 @@ export async function runPipeline(
     warnings.push(...screen.warnings);
     const input = screen.sanitized;
 
-    // Baseline ("before") score runs in parallel with the main pipeline.
+    // Baseline ("before") score runs in parallel with the main pipeline. It
+    // uses the first selected channel's rules (the seller's current listing
+    // usually comes from Amazon).
     const baselinePromise: Promise<QualityScore | null> = input.existing_listing_en
       ? scoreBaseline(
           ctxFor(rootSpan),
           input.existing_listing_en,
-          input.platform,
+          input.platforms[0],
           input.brand,
         ).catch(() => null)
       : Promise.resolve(null);
@@ -137,25 +152,50 @@ export async function runPipeline(
     warnings.push(...extraction.warnings);
     const facts = extraction.facts;
 
+    // Photos (optional) and keywords only need the facts: run them together.
+    const imagesPromise: Promise<ImageAnalysis | null> =
+      input.images.length > 0
+        ? stage(
+            "images",
+            { photos: input.images.length },
+            (ctx) => runImageCheck(ctx, input.images, facts.product_type),
+            (r) =>
+              r.suggested_main_index === null
+                ? `${r.images.length} photo(s) checked; none works as a main image`
+                : `${r.images.length} photo(s) checked; photo ${r.suggested_main_index + 1} suggested as main`,
+          ).catch((e) => {
+            warnings.push(`Photo check skipped: ${errorMessage(e)}`);
+            return null;
+          })
+        : Promise.resolve(null);
+
     const keywords = await stage(
       "keywords",
-      { product_type: facts.product_type },
-      (ctx) => runKeywords(ctx, facts, input.platform),
+      { product_type: facts.product_type, platforms: input.platforms },
+      (ctx) => runKeywords(ctx, facts, input.platforms),
       (r) =>
-        `${r.primary.length} primary and ${r.secondary.length} secondary AI-suggested keywords`,
+        `${r.primary.length} primary, ${r.secondary.length} secondary keywords and ${r.hashtags.length} hashtags (AI-suggested)`,
     );
 
-    const { draft } = await stage(
+    // One localization agent per channel, in parallel; each gets its own span.
+    const drafts = await stage(
       "localization",
-      { facts: facts.facts.length },
-      (ctx) => runLocalization(ctx, input, facts, keywords),
-      (r) => `Draft written in ${r.turns} turns`,
+      { platforms: input.platforms },
+      (ctx) =>
+        Promise.all(
+          input.platforms.map((platform) =>
+            tracer.span(`localization.${platform}`, "stage", ctx.spanId, { platform }, (spanId) =>
+              runLocalization({ ...ctx, spanId }, platform, input, facts, keywords),
+            ),
+          ),
+        ),
+      (r) => r.map((d) => `${platformLabel(d.platform)} draft in ${d.turns} turns`).join(" · "),
     );
 
     const compliance = await stage(
       "compliance",
-      { claims: facts.marketing_claims.length },
-      (ctx) => runCompliance(ctx, input, facts, draft, retriever),
+      { claims: facts.marketing_claims.length, drafts: drafts.length },
+      (ctx) => runCompliance(ctx, input, facts, drafts, retriever),
       (r) => r.summary,
     );
 
@@ -163,47 +203,76 @@ export async function runPipeline(
       "output_gate",
       { claims: compliance.claims.length },
       async () =>
-        applyGate({
-          draft,
-          compliance,
-          platform: input.platform,
-          brand: input.brand,
-          evidence: input.evidence,
-        }),
+        drafts.map((d) => ({
+          platform: d.platform,
+          draft: d.draft,
+          ...applyGate({
+            draft: d.draft,
+            compliance,
+            platform: d.platform,
+            brand: input.brand,
+            evidence: input.evidence,
+          }),
+        })),
       (r) =>
-        r.gate.decision === "pass"
-          ? `PASS — ${r.gate.applied_fixes.length} fixes applied`
-          : `FAIL — ${r.gate.needs_review.length} issues need review`,
+        r
+          .map(
+            (g) =>
+              `${platformLabel(g.platform)} ${g.gate.decision === "pass" ? "PASS" : "FAIL"}` +
+              (g.gate.decision === "pass"
+                ? ` (${g.gate.applied_fixes.length} fixes)`
+                : ` (${g.gate.needs_review.length} to review)`),
+          )
+          .join(" · "),
     );
 
-    const score = await stage(
+    const imageAnalysis = await imagesPromise;
+
+    const channels = await stage(
       "scoring",
       {},
-      async (ctx) => {
-        const judge = await runJudge(ctx, gated.listing);
-        return computeScore({
-          listing: gated.listing,
-          validation: gated.validation,
-          judge,
-          keywords,
-          facts,
-          compliance,
-          evidence: input.evidence,
-        });
-      },
-      (r) => `Quality score ${r.total}/100`,
+      (ctx) =>
+        Promise.all(
+          gated.map(async (g): Promise<ChannelResult> => {
+            const judge = await runJudge(ctx, g.listing, `judge.${g.platform}`);
+            const score = computeScore({
+              listing: g.listing,
+              validation: g.validation,
+              judge,
+              keywords,
+              facts,
+              compliance,
+              evidence: input.evidence,
+            });
+            return {
+              platform: g.platform,
+              draft: g.draft,
+              listing: g.listing,
+              validation: g.validation,
+              gate: g.gate,
+              score,
+              fields: buildPublishFields({
+                platform: g.platform,
+                listing: g.listing,
+                validation: g.validation,
+                input,
+                facts,
+                keywords,
+              }),
+              images: imageGuidance(g.platform, facts, keywords),
+            };
+          }),
+        ),
+      (r) => r.map((c) => `${platformLabel(c.platform)} ${c.score.total}/100`).join(" · "),
     );
 
     const result: PipelineResult = {
-      platform: input.platform,
+      platforms: input.platforms,
       facts,
       keywords,
-      draft,
-      listing: gated.listing,
-      validation: gated.validation,
+      channels,
       compliance,
-      gate: gated.gate,
-      score,
+      images: mainImageVerdicts(input.platforms, imageAnalysis),
       baseline_score: await baselinePromise,
       warnings,
     };
@@ -242,7 +311,7 @@ export async function runPipeline(
 async function scoreBaseline(
   ctx: AgentContext,
   existing: string,
-  platform: PipelineResult["platform"],
+  platform: Platform,
   brand: string,
 ): Promise<QualityScore> {
   const listing: ListingDraft = parseExistingListing(existing);

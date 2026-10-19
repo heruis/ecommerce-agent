@@ -4,6 +4,7 @@ import type {
   ListingDraft,
   ListingSummary,
   PipelineResult,
+  Platform,
   ProductInput,
   Profile,
   Repo,
@@ -21,16 +22,16 @@ interface Store {
 }
 
 // Survive Next.js hot reloads in dev by parking the store on globalThis.
-const g = globalThis as unknown as { __listwiseMemoryStore?: Store };
+const g = globalThis as unknown as { __shelfpassMemoryStore?: Store };
 
 function store(): Store {
-  g.__listwiseMemoryStore ??= {
+  g.__shelfpassMemoryStore ??= {
     profiles: new Map(),
     listings: new Map(),
     runs: new Map(),
     stripeEvents: new Map(),
   };
-  return g.__listwiseMemoryStore;
+  return g.__shelfpassMemoryStore;
 }
 
 /**
@@ -130,8 +131,9 @@ export class MemoryRepo implements Repo {
         status: l.status,
         created_at: l.created_at,
         updated_at: l.updated_at,
-        title: l.result?.listing.title ?? l.input.title_zh,
-        score: l.result?.score.total ?? null,
+        title: l.result?.channels[0]?.listing.title ?? l.input.title_zh,
+        platforms: l.input.platforms,
+        score: averageScore(l.result),
       }));
   }
 
@@ -163,10 +165,10 @@ export class MemoryRepo implements Repo {
     return run;
   }
 
-  async saveEdits(userId: string, listingId: string, edited: ListingDraft) {
+  async saveEdits(userId: string, listingId: string, platform: Platform, edited: ListingDraft) {
     const l = await this.getListing(userId, listingId);
     if (!l) throw new Error("Listing not found");
-    l.edited = edited;
+    l.edited = { ...(l.edited ?? {}), [platform]: edited };
     l.updated_at = nowIso();
     return l;
   }
@@ -177,9 +179,20 @@ export class MemoryRepo implements Repo {
     s.set(eventId, type);
     return true;
   }
+
+  async releaseStripeEvent(eventId: string) {
+    store().stripeEvents.delete(eventId);
+  }
 }
 
 /** Test helper: wipe the in-memory store. */
 export function resetMemoryStore() {
-  g.__listwiseMemoryStore = undefined;
+  g.__shelfpassMemoryStore = undefined;
+}
+
+export function averageScore(result: PipelineResult | null): number | null {
+  if (!result || result.channels.length === 0) return null;
+  return Math.round(
+    result.channels.reduce((s, c) => s + c.score.total, 0) / result.channels.length,
+  );
 }

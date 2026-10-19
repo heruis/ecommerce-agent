@@ -3,3 +3,4 @@ export { runExtraction } from "./extraction/agent";
 export { runJudge } from "./judge/agent";
 export { runKeywords } from "./keywords/agent";
 export { runLocalization } from "./localization/agent";
+export { runImageCheck } from "./images/agent";

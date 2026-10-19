@@ -11,6 +11,6 @@ export {
   type ClaimRule,
   type LexiconHit,
 } from "./claims-lexicon";
-export { applyGate, replaceCaseAware, type GateResult } from "./gate";
-export { asSellerData, screenInput, type InputScreenResult } from "./input";
+export { allText, applyGate, replaceCaseAware, type GateResult } from "./gate";
+export { asSellerData, imageMatchesType, screenInput, type InputScreenResult } from "./input";
 export { redactForLog, redactPII, type PiiFinding } from "./pii";

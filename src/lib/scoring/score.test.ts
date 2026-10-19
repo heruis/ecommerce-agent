@@ -14,6 +14,9 @@ const listing: ListingDraft = {
   ],
   description: "A collapsible silicone cup for travel, camping and hiking. ".repeat(3),
   search_terms: "foldable mug",
+  seo_title: "",
+  seo_description: "",
+  tags: [],
 };
 const judge = { naturalness: 4, clarity: 4, issues: [] };
 

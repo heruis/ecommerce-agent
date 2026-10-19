@@ -32,23 +32,33 @@ interface Candidate {
   status: ClaimAssessment["status"];
 }
 
-/** Claims to review: risky phrases in the draft plus the seller's own claims. */
+/**
+ * Claims to review: risky phrases in every platform's draft (one entry per
+ * phrase, at its first occurrence) plus the seller's own claims.
+ */
 export function complianceCandidates(
-  draft: ListingDraft,
+  drafts: ListingDraft[],
   facts: ProductFacts,
   evidence: string,
 ): Candidate[] {
   const out: Candidate[] = [];
-  const fields: [ListingField, string][] = [
-    ["title", draft.title],
-    ["bullets", draft.bullets.join("\n")],
-    ["description", draft.description],
-    ["search_terms", draft.search_terms],
-  ];
-  for (const [field, text] of fields) {
-    for (const hit of scanClaims(text, evidence)) {
-      if (hit.language === "en")
-        out.push({ rule: hit.rule, field, text: hit.match, status: hit.status });
+  for (const draft of drafts) {
+    const fields: [ListingField, string][] = [
+      ["title", draft.title],
+      ["bullets", draft.bullets.join("\n")],
+      ["description", draft.description],
+      ["search_terms", draft.search_terms],
+      ["seo_title", draft.seo_title],
+      ["seo_description", draft.seo_description],
+      ["tags", draft.tags.join(" ")],
+    ];
+    for (const [field, text] of fields) {
+      for (const hit of scanClaims(text, evidence)) {
+        if (hit.language !== "en") continue;
+        // One assessment per phrase: the gate applies it wherever it appears.
+        const dup = out.some((c) => c.text.toLowerCase() === hit.match.toLowerCase());
+        if (!dup) out.push({ rule: hit.rule, field, text: hit.match, status: hit.status });
+      }
     }
   }
   for (const claim of facts.marketing_claims) {
@@ -65,12 +75,12 @@ export function complianceCandidates(
  *   turn 2 -> submit_compliance_report built from what the tools returned
  */
 export function complianceMock(
-  draft: ListingDraft,
+  drafts: ListingDraft[],
   facts: ProductFacts,
   evidence: string,
 ): MockResponder {
   return (req) => {
-    const candidates = complianceCandidates(draft, facts, evidence);
+    const candidates = complianceCandidates(drafts, facts, evidence);
     const calls = toolCallsWithResults(req);
 
     if (calls.length === 0 && candidates.length > 0) {

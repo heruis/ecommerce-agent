@@ -8,7 +8,7 @@
       "owns": ["**"]
     },
     "ws1": {
-      "name": "WS1 — AI pipeline (extraction, keywords, localization, orchestration)",
+      "name": "WS1 — AI pipeline (extraction, keywords, per-channel localization, orchestration, report assembly)",
       "branch_prefixes": ["ws1/"],
       "owns": [
         "src/lib/agents/extraction/**",
@@ -16,16 +16,18 @@
         "src/lib/agents/localization/**",
         "src/lib/agents/shared/**",
         "src/lib/pipeline/**",
+        "src/lib/report/**",
         "evals/datasets/ws1-*.jsonl",
         "docs/report/sections/ws1-*.md",
         "docs/team/status/ws1.md"
       ]
     },
     "ws2": {
-      "name": "WS2 — Trust layer (compliance agent, RAG, guardrails, rules, scoring, evals)",
+      "name": "WS2 — Trust layer (compliance agent, photo check, RAG, guardrails, marketplace rules, scoring, evals)",
       "branch_prefixes": ["ws2/"],
       "owns": [
         "src/lib/agents/compliance/**",
+        "src/lib/agents/images/**",
         "src/lib/agents/judge/**",
         "src/lib/guardrails/**",
         "src/lib/rules/**",
