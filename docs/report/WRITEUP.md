@@ -2,7 +2,7 @@
 
 **Turn Chinese product information into one compliance-checked, publish-ready report for Amazon US, TikTok Shop US and Shopify.**
 
-**Team:** Team 9 · **Live URL:** https://shelfpass.vercel.app · **Repo:** https://github.com/heruis/ecommerce-agent
+**Team 9** · **Live URL:** https://shelfpass.vercel.app · **Repo:** https://github.com/heruis/ecommerce-agent
 
 UCLA _440 Building LLM Applications_ capstone. All numbers below come from live runs on 2026-10-19 with `claude-sonnet-5-5` (smart tier) and `claude-haiku-5-5` (fast tier), unless marked "mock".
 
