@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/client";
 import type { ChannelView } from "@/lib/report";
 import { platformLabel } from "@/lib/rules";
 import { Alert, Badge, Button, buttonClass, Card, cn, Spinner } from "@/components/ui";
+import { ChannelPreview } from "./ChannelPreview";
 import { ChannelReport } from "./ChannelReport";
 import { CompliancePanel } from "./CompliancePanel";
 import { KeywordsCard } from "./KeywordsCard";
@@ -223,6 +224,15 @@ export function ListingWorkspace({
           </div>
 
           <ChannelReport view={active} images={result.images} listingId={listing.id} />
+          <ChannelPreview
+            key={`preview:${active.platform}`}
+            platform={active.platform}
+            listing={active.listing}
+            brand={listing.input.brand}
+            category={result.facts.category}
+            photos={listing.input.images}
+            fields={active.fields}
+          />
           <div className="grid gap-6 lg:grid-cols-5">
             <div className="lg:col-span-3">
               <ListingEditor

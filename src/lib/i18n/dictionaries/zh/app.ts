@@ -207,6 +207,17 @@ export const app: Dictionary["app"] = {
     addToImprove: "补充以下信息可提升质量：{items}",
     marketplaces: "平台",
   },
+  preview: {
+    title: {
+      amazon_us: "在亚马逊风格页面中预览",
+      tiktok_us: "在 TikTok Shop 风格页面中预览",
+      shopify: "在 Shopify 店铺和 Google 搜索结果中预览",
+    },
+    subtitle: "用你当前的文案和图片，模拟商品详情页的展示效果。",
+    show: "显示预览",
+    hide: "收起预览",
+    price: "预览价格",
+  },
   keywords: {
     title: "关键词",
     note: "根据商品事实由 AI 建议，并非搜索量数据。",

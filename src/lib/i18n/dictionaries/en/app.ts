@@ -214,6 +214,17 @@ export const app = {
     addToImprove: "Add to improve: {items}",
     marketplaces: "Marketplace",
   },
+  preview: {
+    title: {
+      amazon_us: "See it on an Amazon-style page",
+      tiktok_us: "See it on a TikTok Shop-style page",
+      shopify: "See it on your Shopify store and in Google",
+    },
+    subtitle: "Your current copy and photos in a marketplace-style product page.",
+    show: "Show preview",
+    hide: "Hide preview",
+    price: "Preview price",
+  },
   keywords: {
     title: "Keywords",
     note: "AI-suggested from your product facts — not search-volume data.",
