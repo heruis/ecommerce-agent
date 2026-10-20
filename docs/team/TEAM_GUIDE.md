@@ -58,6 +58,19 @@ cd ../shelfpass-ws1-prompts && pnpm install && claude
 
 The ownership hook reads each worktree's branch, so every parallel agent stays inside your workstream. Remove a worktree when merged: `git worktree remove ../shelfpass-ws1-prompts`.
 
+### New folders from site v2 (2026-10-20)
+
+Site v2 added these folders; `ownership.json` assigns them as follows:
+
+| Folder                                                                           | Owner | Why                                                      |
+| -------------------------------------------------------------------------------- | ----- | -------------------------------------------------------- |
+| `src/lib/agents/{audit,appeal,explain}/**`, `src/lib/evidence/**`                | WS2   | Claims, evidence and appeals are the trust layer         |
+| `src/app/api/{audit,appeal,evidence}/**`, `src/app/api/listings/[id]/explain/**` | lead  | API routes stay lead-owned like the other listing routes |
+| `src/app/api/account/**`                                                         | WS4   | Account export and deletion                              |
+| `design-system/**`                                                               | WS3   | Design tokens and rules behind `globals.css`             |
+
+Already covered: `src/components/{preview,tools,marketing,evidence}/**` and `src/lib/i18n/**` (WS3), `src/lib/pipeline/{audit,appeal,tool-run,tool-route}.ts` and `src/lib/report/risk.ts` (WS1), `evals/**` (WS2), `src/lib/billing/credits.ts` (WS4). Each language's strings live in `src/lib/i18n/dictionaries/{en,zh}/<area>.ts`; the area's owner adds both languages.
+
 ## 4. Changing a file you do not own
 
 | You need…                                      | Do this                                                                                                                                                                        |

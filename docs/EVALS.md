@@ -4,15 +4,17 @@
 
 ## What we evaluate
 
-| Layer                        | Question                                                                        | Suite                            | Metric                             | Target            |
-| ---------------------------- | ------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------- | ----------------- |
-| Retrieval                    | Did the compliance agent get the right policy chunks?                           | `evals/datasets/retrieval.jsonl` | Recall@3, Precision@3, MRR, NDCG@3 | Recall@3 ≥ 0.9    |
-| Generation + agent execution | Is every channel's final listing correct, compliant, well-formed and efficient? | `evals/datasets/golden.jsonl`    | Pass rate over 4 dimensions        | ≥ 80% (ship rule) |
-| Language quality             | Does it read like a native US listing?                                          | LLM judge inside every run       | naturalness/clarity 1–5            | median ≥ 4        |
-| Units                        | Do rules, guardrails, harness, repo behave?                                     | `*.test.ts` (Vitest)             | all pass                           | 100%              |
-| Journey                      | Can a user do the whole flow?                                                   | `e2e/smoke.spec.ts` (Playwright) | pass                               | pass              |
+| Layer                        | Question                                                                        | Suite                            | Metric                                                                                                     | Target            |
+| ---------------------------- | ------------------------------------------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------- |
+| Retrieval                    | Did the compliance agent get the right policy chunks?                           | `evals/datasets/retrieval.jsonl` | Recall@3, Precision@3, MRR, NDCG@3                                                                         | Recall@3 ≥ 0.9    |
+| Generation + agent execution | Is every channel's final listing correct, compliant, well-formed and efficient? | `evals/datasets/golden.jsonl`    | Pass rate over 4 dimensions                                                                                | ≥ 80% (ship rule) |
+| Listing audit                | Does the audit catch the problems, fix only them, and lower the risk?           | `evals/datasets/audit.jsonl`     | Pass rate over 4 dimensions                                                                                | ≥ 80%             |
+| Takedown / appeal            | Is the cause right, cited from retrieved policy, with an English appeal?        | `evals/datasets/appeal.jsonl`    | Pass rate over 4 dimensions                                                                                | ≥ 80%             |
+| Language quality             | Does it read like a native US listing?                                          | LLM judge inside every run       | naturalness/clarity 1–5                                                                                    | median ≥ 4        |
+| Units                        | Do rules, guardrails, harness, repo behave?                                     | `*.test.ts` (Vitest)             | all pass                                                                                                   | 100%              |
+| Journey                      | Can a user do the whole flow?                                                   | `e2e/smoke.spec.ts` (Playwright) | 4 journeys: report + preview + credit pack + Pro; injection blocked; evidence + audit + appeal; Chinese UI | pass              |
 
-Current baseline (mock mode, 2026-10-19, three channels per case unless the case selects fewer): golden **13/13**, retrieval recall@3 **0.93**, MRR **1.00**, NDCG@3 **0.95**; unit tests **68/68**; e2e **2/2**. Live-mode numbers are the ones that count for the demo; record them in `memory/lessons-learned.md` and the write-up.
+Current baseline (mock mode, 2026-10-20, branch `feat/site-v2`; three channels per golden case unless the case selects fewer): golden **13/13**, audit **6/6**, appeal **4/4**, retrieval recall@3 **0.93**, MRR **1.00**, NDCG@3 **0.95**; unit tests **175/175**; e2e **4/4**. Live mode (2026-10-19, core report only): golden 13/13 in two consecutive runs. The audit and appeal suites have not been run live yet; do that before the demo. Live-mode numbers are the ones that count; record them in `memory/lessons-learned.md` and the write-up.
 
 ## Golden dataset (`evals/datasets/golden.jsonl`)
 
@@ -52,6 +54,28 @@ Coverage today (13 cases): certification, absolute safety, ranking, antimicrobia
 
 **Add cases from real traces.** When something goes wrong in the app, copy the input from the trace page into a new case, write `expect` first, then fix the system (`/eval`, `eval-loop` skill). Never edit an existing case to make it pass.
 
+## Audit dataset (`evals/datasets/audit.jsonl`)
+
+Six live-listing pastes with the expected outcome written first: `audit-fda-cup` (FDA + "100% safe" in an Amazon listing), `audit-antibacterial-board`, `audit-clean-utensils` (no changes expected), `audit-stuffed-title` (overlong, repeated keywords), `audit-chinese-leftover`, `audit-tiktok-ranking` (a sales-rank claim on TikTok Shop). Checks (`evals/lib/tools-checks.ts`, `checkAuditCase`):
+
+| Dimension           | Checks                                                                                                                                          |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Outcome**         | Risk drops when the listing had problems; no changes when the case expects none; risk after ≤ `max_risk_after`                                  |
+| **Process**         | Every `must_flag` claim type was flagged; every restricted claim has a citation                                                                 |
+| **Output contract** | No `must_not_appear` phrase in the fixed listing; the fixed listing passes the channel's rules; **fields without a problem are byte-identical** |
+| **Efficiency**      | LLM calls ≤ `max_llm_calls`                                                                                                                     |
+
+## Appeal dataset (`evals/datasets/appeal.jsonl`)
+
+Four notices: `appeal-pesticide` (antimicrobial claim, explanation in Chinese), `appeal-fda`, `appeal-made-in-usa`, `appeal-trademark`. Checks (`checkAppealCase`):
+
+| Dimension           | Checks                                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Outcome**         | The policy area mentions one of the expected terms; a likely cause is given                                                         |
+| **Process**         | Every citation exists in the knowledge base; a citation is present when the case requires one (the trademark case expects none yet) |
+| **Output contract** | The appeal letter is English; the explanation is in the requested language; no documents promised that the seller did not list      |
+| **Efficiency**      | LLM calls ≤ `max_llm_calls`                                                                                                         |
+
 ## Retrieval dataset (`evals/datasets/retrieval.jsonl`)
 
 `{"query": "...", "relevant": ["doc-id", ...]}` — queries written the way the compliance agent writes them. Doc-level relevance. Run after any knowledge-base or retriever change; compare lexical vs vector before switching `RAG_MODE`.
@@ -59,13 +83,15 @@ Coverage today (13 cases): certification, absolute safety, ranking, antimicrobia
 ## Running
 
 ```bash
-pnpm eval                          # both suites, AI_MODE from .env.local (mock by default)
+pnpm eval                          # all suites, AI_MODE from .env.local (mock by default)
 pnpm eval --suite retrieval
 pnpm eval --suite golden --limit 3 # live mode costs money — iterate on a few cases
+pnpm eval --suite audit            # listing audit cases
+pnpm eval --suite appeal           # takedown / appeal cases
 AI_MODE=live pnpm eval             # the real measurement (needs ANTHROPIC_* keys)
 ```
 
-Results are written to `evals/results/<timestamp>-<mode>.json` (gitignored). Exit code is non-zero below the 80% ship threshold, so CI fails.
+Results are written to `evals/results/<timestamp>-<mode>.json` (gitignored). The exit code is non-zero if any suite falls below the 80% ship threshold, so CI fails.
 
 Mock mode tests the _harness and plumbing_ (orchestration, tools, gate, scoring) deterministically; live mode tests the _prompts_. Both matter.
 

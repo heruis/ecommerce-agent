@@ -19,8 +19,7 @@
         "src/lib/report/**",
         "evals/datasets/ws1-*.jsonl",
         "docs/report/sections/ws1-*.md",
-        "docs/team/status/ws1.md",
-        "src/lib/evidence/**"
+        "docs/team/status/ws1.md"
       ]
     },
     "ws2": {
@@ -41,7 +40,8 @@
         "docs/team/status/ws2.md",
         "src/lib/agents/audit/**",
         "src/lib/agents/appeal/**",
-        "src/lib/agents/explain/**"
+        "src/lib/agents/explain/**",
+        "src/lib/evidence/**"
       ]
     },
     "ws3": {
