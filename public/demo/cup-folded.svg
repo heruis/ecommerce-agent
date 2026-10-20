@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="The cup folded flat to about 3 cm, next to its open size">
+  <defs>
+    <linearGradient id="band" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3f6fd1"/>
+      <stop offset="0.35" stop-color="#6a95ef"/>
+      <stop offset="1" stop-color="#3a64c0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="#ffffff"/>
+  <ellipse cx="400" cy="560" rx="230" ry="24" fill="#0f172a" opacity="0.07"/>
+  <!-- folded rings -->
+  <path d="M185 470 L615 470 L600 540 Q598 552 585 552 L215 552 Q202 552 200 540 Z" fill="url(#band)"/>
+  <ellipse cx="400" cy="470" rx="215" ry="34" fill="#2f5bb8"/>
+  <ellipse cx="400" cy="458" rx="205" ry="32" fill="#e2e8f0"/>
+  <ellipse cx="400" cy="450" rx="190" ry="27" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+  <rect x="455" y="430" width="70" height="20" rx="10" fill="#cbd5e1"/>
+  <!-- height marker -->
+  <path d="M660 450 L660 552" stroke="#0f172a" stroke-width="4"/>
+  <path d="M645 450 L675 450 M645 552 L675 552" stroke="#0f172a" stroke-width="4"/>
+  <text x="690" y="512" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#0f172a">3 cm</text>
+  <text x="400" y="240" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#1e293b">Folds flat</text>
+  <text x="400" y="290" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#475569">fits a pocket or backpack</text>
+</svg>
