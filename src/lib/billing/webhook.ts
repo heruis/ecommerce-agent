@@ -37,7 +37,7 @@ async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> 
       if (!userId || !(await repo.getProfile(userId))) return "ignored";
       await repo.setPlan(userId, {
         plan: "pro",
-        credits: plans().pro.runs,
+        credits: plans().pro.credits,
         stripe_customer_id: idOf(session.customer),
         stripe_subscription_id: idOf(session.subscription),
       });
@@ -51,7 +51,7 @@ async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> 
       const periodEnd = invoice.lines?.data?.[0]?.period?.end;
       await repo.setPlan(profile.id, {
         plan: "pro",
-        credits: plans().pro.runs,
+        credits: plans().pro.credits,
         current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       });
       return "processed";

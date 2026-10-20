@@ -14,7 +14,7 @@ export async function POST() {
   await repo.ensureProfile(user);
   await repo.setPlan(user.id, {
     plan: "pro",
-    credits: plans().pro.runs,
+    credits: plans().pro.credits,
     stripe_customer_id: `cus_mock_${user.id}`,
     current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
   });

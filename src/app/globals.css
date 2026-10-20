@@ -1,32 +1,39 @@
 @import "tailwindcss";
 
-/* Design tokens. Owner: WS3. */
+/*
+ * Design tokens. Source of truth: design-system/shelfpass/MASTER.md
+ * (generated with the ui-ux-pro-max skill: trust blue + orange CTA, Plus
+ * Jakarta Sans, light mode only). Owner: WS3.
+ *
+ * Contrast (WCAG AA, 4.5:1 for text):
+ *  - brand #2563EB on white 5.2:1 · white on brand 5.2:1
+ *  - accent #C2410C on white 5.2:1 · white on accent 5.2:1 (the generator's
+ *    #EA580C needs black text; we darkened it to keep white CTA labels)
+ *  - muted #475569 on #F8FAFC 7.2:1
+ */
 :root {
+  color-scheme: light;
   --background: #f8fafc;
   --surface: #ffffff;
-  --foreground: #0f172a;
-  --muted: #64748b;
+  --foreground: #1e293b;
+  --muted: #475569;
+  --subtle: #e9eff8;
   --border: #e2e8f0;
-  --brand: #4f46e5;
+  --brand: #2563eb;
+  --brand-strong: #1d4ed8;
   --brand-foreground: #ffffff;
+  --accent: #c2410c;
+  --accent-strong: #9a3412;
+  --accent-foreground: #ffffff;
   --ok: #15803d;
   --warn: #b45309;
-  --danger: #b91c1c;
-}
+  --danger: #dc2626;
+  --ring: #2563eb;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1120;
-    --surface: #111827;
-    --foreground: #e5e7eb;
-    --muted: #94a3b8;
-    --border: #1f2937;
-    --brand: #818cf8;
-    --brand-foreground: #0b1120;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --danger: #f87171;
-  }
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
+  --shadow-lg: 0 10px 15px -3px rgb(15 23 42 / 0.08), 0 4px 6px -4px rgb(15 23 42 / 0.06);
+  --shadow-xl: 0 20px 25px -5px rgb(15 23 42 / 0.1), 0 8px 10px -6px rgb(15 23 42 / 0.08);
 }
 
 @theme inline {
@@ -34,20 +41,55 @@
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
   --color-border: var(--border);
   --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
   --color-brand-foreground: var(--brand-foreground);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-danger: var(--danger);
+  --color-ring: var(--ring);
+  /* Latin from Plus Jakarta Sans (next/font); Chinese falls back to the OS font. */
   --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei",
-    sans-serif;
+    var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-card: var(--shadow-md);
+  --shadow-pop: var(--shadow-lg);
+  --shadow-hero: var(--shadow-xl);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* Visible keyboard focus everywhere (design system: focus states visible). */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+a,
+button,
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -2,6 +2,8 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type {
   CreditResult,
+  EvidenceInput,
+  EvidenceItem,
   Listing,
   ListingDraft,
   ListingSummary,
@@ -12,9 +14,16 @@ import type {
   Repo,
   RunRecord,
   SessionUser,
+  ToolKind,
+  ToolRun,
+  ToolRunOf,
+  ToolRunStatus,
+  ToolRunSummary,
+  UserDataExport,
 } from "@/lib/contracts";
 import { createSupabaseAdminClient } from "@/lib/auth/supabase-server";
 import { env } from "@/lib/env";
+import { toolRunSummary } from "./memory";
 import { newId, nowIso } from "@/lib/utils/ids";
 
 /**
@@ -250,6 +259,155 @@ export class SupabaseRepo implements Repo {
     const { error } = await this.db.from("stripe_events").delete().eq("id", eventId);
     check(error, "releaseStripeEvent");
   }
+
+  async addCredits(userId: string, amount: number): Promise<number> {
+    const { data, error } = await this.db.rpc("add_credits", {
+      p_user_id: userId,
+      p_amount: Math.max(0, Math.floor(amount)),
+    });
+    check(error, "addCredits");
+    if (data === null || data === undefined) throw new Error("No profile to add credits to.");
+    return Number(data);
+  }
+
+  // ---- evidence library --------------------------------------------------
+
+  async listEvidence(userId: string): Promise<EvidenceItem[]> {
+    const { data, error } = await this.db
+      .from("evidence")
+      .select(EVIDENCE_COLS)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(200);
+    check(error, "listEvidence");
+    return (data ?? []).map(toEvidence);
+  }
+
+  async createEvidence(userId: string, input: EvidenceInput): Promise<EvidenceItem> {
+    const item: EvidenceItem = {
+      ...input,
+      id: newId("evd"),
+      user_id: userId,
+      created_at: nowIso(),
+    };
+    const { error } = await this.db.from("evidence").insert(item);
+    check(error, "createEvidence");
+    return item;
+  }
+
+  async deleteEvidence(userId: string, evidenceId: string): Promise<boolean> {
+    const { data, error } = await this.db
+      .from("evidence")
+      .delete()
+      .eq("id", evidenceId)
+      .eq("user_id", userId)
+      .select("id");
+    check(error, "deleteEvidence");
+    return (data?.length ?? 0) > 0;
+  }
+
+  // ---- audits and appeals -------------------------------------------------
+
+  async createToolRun<K extends ToolKind>(
+    userId: string,
+    kind: K,
+    input: ToolRunOf<K>["input"],
+  ): Promise<ToolRunOf<K>> {
+    const now = nowIso();
+    const run = {
+      id: newId(kind === "audit" ? "aud" : "apl"),
+      user_id: userId,
+      kind,
+      status: "running" as const,
+      input,
+      result: null,
+      error: null,
+      created_at: now,
+      updated_at: now,
+    };
+    const { error } = await this.db.from("tool_runs").insert(run);
+    check(error, "createToolRun");
+    return run as unknown as ToolRunOf<K>;
+  }
+
+  async saveToolRun<K extends ToolKind>(
+    userId: string,
+    runId: string,
+    update: { status: ToolRunStatus; result: ToolRunOf<K>["result"]; error: string | null },
+  ): Promise<void> {
+    const { data, error } = await this.db
+      .from("tool_runs")
+      .update({ ...update, updated_at: nowIso() })
+      .eq("id", runId)
+      .eq("user_id", userId)
+      .select("id");
+    check(error, "saveToolRun");
+    if (!data?.length) throw new Error("Run not found");
+  }
+
+  async getToolRun(userId: string, runId: string): Promise<ToolRun | null> {
+    const { data, error } = await this.db
+      .from("tool_runs")
+      .select(TOOL_RUN_COLS)
+      .eq("id", runId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    check(error, "getToolRun");
+    return data ? toToolRun(data) : null;
+  }
+
+  async listToolRuns(userId: string, kind?: ToolKind): Promise<ToolRunSummary[]> {
+    let q = this.db.from("tool_runs").select(TOOL_RUN_COLS).eq("user_id", userId);
+    if (kind) q = q.eq("kind", kind);
+    const { data, error } = await q.order("created_at", { ascending: false }).limit(100);
+    check(error, "listToolRuns");
+    return (data ?? []).map((row) => toolRunSummary(toToolRun(row)));
+  }
+
+  // ---- account -----------------------------------------------------------
+
+  async exportUserData(userId: string): Promise<UserDataExport> {
+    const [profile, listings, runs, toolRuns, evidence] = await Promise.all([
+      this.getProfile(userId),
+      this.db.from("listings").select(LISTING_COLS).eq("user_id", userId),
+      this.db
+        .from("pipeline_runs")
+        .select("id,listing_id,status,ai_mode,usage,error,started_at,finished_at")
+        .eq("user_id", userId),
+      this.db.from("tool_runs").select(TOOL_RUN_COLS).eq("user_id", userId),
+      this.listEvidence(userId),
+    ]);
+    check(listings.error, "exportUserData");
+    check(runs.error, "exportUserData");
+    check(toolRuns.error, "exportUserData");
+    return {
+      exported_at: nowIso(),
+      profile,
+      listings: (listings.data ?? []).map(toListing),
+      runs: (runs.data ?? []) as unknown as UserDataExport["runs"],
+      tool_runs: (toolRuns.data ?? []).map(toToolRun),
+      evidence,
+    };
+  }
+
+  async deleteUserData(userId: string): Promise<void> {
+    // listings, runs, tool_runs and evidence cascade from the profile row.
+    const { error } = await this.db.from("profiles").delete().eq("id", userId);
+    check(error, "deleteUserData");
+  }
+}
+
+const EVIDENCE_COLS = "id,user_id,name,kind,issuer,reference,claims,expires_on,notes,created_at";
+const TOOL_RUN_COLS = "id,user_id,kind,status,input,result,error,created_at,updated_at";
+
+function toEvidence(row: unknown): EvidenceItem {
+  const e = row as EvidenceItem;
+  return { ...e, claims: e.claims ?? [], created_at: iso(e.created_at) };
+}
+
+function toToolRun(row: unknown): ToolRun {
+  const r = row as ToolRun;
+  return { ...r, created_at: iso(r.created_at), updated_at: iso(r.updated_at) };
 }
 
 interface SummaryRow {

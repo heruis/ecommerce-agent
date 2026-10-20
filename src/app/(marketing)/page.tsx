@@ -24,7 +24,7 @@ export default function LandingPage() {
             href="/listings/new"
             className="rounded-lg bg-brand px-5 py-2.5 font-medium text-brand-foreground"
           >
-            Try it free — {p.free.runs} runs
+            Try it free — {p.free.credits} runs
           </Link>
           <a href="#how" className="rounded-lg border border-border px-5 py-2.5 font-medium">
             How it works
@@ -59,7 +59,7 @@ export default function LandingPage() {
           <h3 className="font-semibold">Free</h3>
           <p className="mt-1 text-3xl font-semibold">$0</p>
           <p className="mt-2 text-sm text-muted">
-            {p.free.runs} listing runs to try the full pipeline.
+            {p.free.credits} listing runs to try the full pipeline.
           </p>
         </Card>
         <Card className="border-brand">
@@ -69,7 +69,7 @@ export default function LandingPage() {
             <span className="text-base font-normal text-muted">/month</span>
           </p>
           <p className="mt-2 text-sm text-muted">
-            {p.pro.runs} listing runs per month, compliance review and exports.
+            {p.pro.credits} listing runs per month, compliance review and exports.
           </p>
         </Card>
       </section>

@@ -1,20 +1,42 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import type { ReactNode } from "react";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
+import { HTML_LANG } from "@/lib/i18n";
+import { LocaleProvider } from "@/lib/i18n/client";
+import { getLocale } from "@/lib/i18n/server";
 import "./globals.css";
 
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "ShelfPass — Chinese product info to compliant US listings",
+  title: {
+    default: "ShelfPass — publish-ready listings for Amazon, TikTok Shop and Shopify",
+    template: "%s · ShelfPass",
+  },
   description:
-    "An agentic AI platform that turns Chinese product information into localized, search-ready and compliance-reviewed Amazon US listings.",
+    "Paste Chinese product notes, get one compliance-checked report with every field each marketplace's add-product form asks for — plus listing audits, takedown help and an evidence library.",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#2563eb" };
+
+/** Root shell: header, page, footer. Pages own their own width (see Container). */
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = await getLocale();
   return (
-    <html lang="en">
-      <body className="min-h-screen antialiased">
-        <SiteHeader />
-        <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+    <html lang={HTML_LANG[locale]} className={jakarta.variable}>
+      <body className="flex min-h-screen flex-col antialiased">
+        <LocaleProvider locale={locale}>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </LocaleProvider>
       </body>
     </html>
   );

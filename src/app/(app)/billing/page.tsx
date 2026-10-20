@@ -37,7 +37,7 @@ export default async function BillingPage({
         {profile.plan === "pro" ? (
           <>
             <p className="text-sm text-muted">
-              {p.pro.runs} runs per month.
+              {p.pro.credits} runs per month.
               {profile.current_period_end
                 ? ` Renews ${new Date(profile.current_period_end).toLocaleDateString()}.`
                 : ""}
@@ -47,8 +47,8 @@ export default async function BillingPage({
         ) : (
           <>
             <p className="text-sm text-muted">
-              Pro: ${p.pro.priceUsd}/month for {p.pro.runs} runs. Payments run in Stripe test mode —
-              use card 4242 4242 4242 4242.
+              Pro: ${p.pro.priceUsd}/month for {p.pro.credits} runs. Payments run in Stripe test
+              mode — use card 4242 4242 4242 4242.
             </p>
             <UpgradeButton />
           </>
