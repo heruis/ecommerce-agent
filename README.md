@@ -16,7 +16,7 @@ The output is a report, not a live publish: every field of each form with a copy
 
 UCLA _440 Building LLM Applications_ capstone.
 
-> **Live demo:** _Vercel URL goes here after the first deploy_ · **Docs:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Agent design](docs/AGENT_DESIGN.md) · [Guardrails](docs/GUARDRAILS.md) · [Evals](docs/EVALS.md) · [Setup](docs/SETUP.md) · [Team guide](docs/team/TEAM_GUIDE.md)
+> **Live demo:** **https://shelfpass.vercel.app** (Stripe in test mode: card `4242 4242 4242 4242`) · **Docs:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Agent design](docs/AGENT_DESIGN.md) · [Guardrails](docs/GUARDRAILS.md) · [Evals](docs/EVALS.md) · [Setup](docs/SETUP.md) · [Team guide](docs/team/TEAM_GUIDE.md)
 
 ![Listing report: keywords, facts, one tab per marketplace with its publish fields](docs/images/listing.png)
 
@@ -61,6 +61,7 @@ flowchart LR
   - Claude API through the Anthropic TypeScript SDK, with a fast tier and a smart tier
 - **Harness:** structured outputs plus zod contracts, a ReAct tool loop driven by `stop_reason`, per-run budgets (calls, tokens, cost, time), tracing of every model and tool call, and PII redaction.
 - **Trust:** three guardrail layers (input incl. a photo file check, actions, output gate per channel) and an eval suite of 13 golden cases scored on outcome, process, output contract and efficiency for every channel, plus retrieval metrics (Recall@k, MRR, NDCG). Merging is blocked below 80% pass rate.
+- **Live results** (`claude-sonnet-5-5` smart, `claude-haiku-5-5` fast): 13/13 golden cases in two consecutive live runs (first live baseline: 10/13), about $0.08–0.09 and 31–34 s per three-channel case; retrieval recall@3 0.93.
 
 ![Agent trace: every stage, model call and tool call with tokens and cost](docs/images/trace.png)
 
