@@ -1,12 +1,19 @@
+import { ChevronLeft, Search } from "lucide-react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getRepo } from "@/lib/db";
+import { fmt } from "@/lib/i18n";
+import { getT } from "@/lib/i18n/server";
 import { channelViews } from "@/lib/report";
 import { platformLabel } from "@/lib/rules";
 import { PrintButton } from "@/components/listing/PrintButton";
+import { Logo } from "@/components/layout/Logo";
 
-export const metadata = { title: "Listing report · ShelfPass" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT()).app.report.metaTitle };
+}
 
 /**
  * The printable report: one document a seller (or their VA) can follow to
@@ -15,63 +22,87 @@ export const metadata = { title: "Listing report · ShelfPass" };
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireUser(`/listings/${id}/report`);
-  const listing = await getRepo().getListing(user.id, id);
+  const [t, listing] = [await getT(), await getRepo().getListing(user.id, id)];
   if (!listing) notFound();
+  const tr = t.app.report;
   const r = listing.result;
   if (!r) {
     return (
       <p className="text-sm text-muted">
-        This report has not been generated yet.{" "}
-        <Link href={`/listings/${id}`} className="text-brand underline">
-          Generate it
+        {tr.notGenerated}{" "}
+        <Link href={`/listings/${id}`} className="font-medium text-brand underline">
+          {tr.generateIt}
         </Link>
-        .
       </p>
     );
   }
   const views = channelViews(listing);
+  const seen = new Set(r.keywords.from_search_box ?? []);
+  const keywordList = (list: string[]) =>
+    list.map((k, i) => (
+      <span key={k}>
+        {i > 0 ? ", " : ""}
+        {k}
+        {seen.has(k) ? (
+          <Search aria-label={tr.seen} className="ml-0.5 inline h-3 w-3 text-ok" />
+        ) : null}
+      </span>
+    ));
 
   return (
     <article className="mx-auto max-w-4xl space-y-8 text-sm print:max-w-none print:text-xs">
-      <header className="space-y-2">
+      <header className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-          <Link href={`/listings/${id}`} className="text-brand underline">
-            ← Back to the workspace
+          <Link
+            href={`/listings/${id}`}
+            className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
+          >
+            <ChevronLeft aria-hidden className="h-4 w-4" />
+            {tr.back}
           </Link>
           <PrintButton />
         </div>
-        <h1 className="text-2xl font-semibold capitalize">
-          {r.facts.product_type} — listing report
+        <div className="hidden print:block">
+          <Logo />
+        </div>
+        <h1 className="text-2xl font-bold text-balance capitalize">
+          {fmt(tr.heading, { product: r.facts.product_type })}
         </h1>
         <p className="text-muted">
-          Source: {listing.input.title_zh} · Channels: {r.platforms.map(platformLabel).join(", ")} ·
-          Generated {listing.updated_at.slice(0, 10)}
+          {fmt(tr.source, {
+            source: listing.input.title_zh,
+            channels: r.platforms.map(platformLabel).join(", "),
+            date: listing.updated_at.slice(0, 10),
+          })}
         </p>
-        <p className="rounded-lg border border-border p-3 text-xs text-muted">
-          ShelfPass screens for risk using summarized marketplace and US rules. It is not legal
-          advice and does not guarantee approval. Keywords are AI-suggested, not search-volume data.
-          Check each site&apos;s current requirements before publishing.
+        <p className="rounded-lg border border-border bg-subtle/40 p-3 text-xs text-muted">
+          {tr.disclaimer}
         </p>
       </header>
 
       <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Keywords</h2>
+        <h2 className="text-lg font-semibold">{tr.keywords}</h2>
         <p>
-          <b>Primary:</b> {r.keywords.primary.join(", ")}
+          <b>{tr.primary}:</b> {keywordList(r.keywords.primary)}
         </p>
         <p>
-          <b>Secondary:</b> {r.keywords.secondary.join(", ")}
+          <b>{tr.secondary}:</b> {keywordList(r.keywords.secondary)}
         </p>
         {r.keywords.hashtags.length ? (
           <p>
-            <b>TikTok hashtags:</b> {r.keywords.hashtags.map((h) => `#${h}`).join(" ")}
+            <b>{tr.hashtags}:</b> {r.keywords.hashtags.map((h) => `#${h}`).join(" ")}
+          </p>
+        ) : null}
+        {seen.size ? (
+          <p className="flex items-center gap-1 text-xs text-muted">
+            <Search aria-hidden className="h-3 w-3 text-ok" /> {tr.seen}
           </p>
         ) : null}
       </section>
 
       {listing.input.images.length ? (
         <section className="space-y-2 break-inside-avoid">
-          <h2 className="text-lg font-semibold">Photos</h2>
+          <h2 className="text-lg font-semibold">{tr.photos}</h2>
           <div className="flex flex-wrap gap-4">
             {listing.input.images.map((p, i) => {
               const o = r.images.analysis?.images.find((x) => x.index === i);
@@ -84,9 +115,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     className="h-40 w-40 rounded border border-border object-cover"
                   />
                   <figcaption className="mt-1 text-xs">
-                    Photo {i + 1}
-                    {r.images.analysis?.suggested_main_index === i ? " (suggested main)" : ""}
-                    {o ? <span className="block text-muted">Alt text: {o.alt_text}</span> : null}
+                    {fmt(tr.photo, { n: i + 1 })}
+                    {r.images.analysis?.suggested_main_index === i ? ` ${tr.suggestedMain}` : ""}
+                    {o ? (
+                      <span className="block text-muted">
+                        {tr.altText}: {o.alt_text}
+                      </span>
+                    ) : null}
                   </figcaption>
                 </figure>
               );
@@ -102,46 +137,51 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <h2 className="text-lg font-semibold">
               {platformLabel(v.platform)}{" "}
               <span className="text-sm font-normal text-muted">
-                quality {v.score.total}/100 · policy gate {v.gate.decision.toUpperCase()}
-                {v.edited ? " · includes your edits" : ""}
+                {fmt(tr.channelMeta, {
+                  score: v.score.total,
+                  gate: v.gate.decision.toUpperCase(),
+                })}
+                {v.edited ? ` · ${tr.edited}` : ""}
               </span>
             </h2>
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-border text-xs uppercase text-muted">
-                  <th className="w-44 py-1 pr-3">Form field</th>
-                  <th className="py-1">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {v.fields.map((f) => (
-                  <tr key={f.key} className="border-b border-border align-top">
-                    <td className="py-1.5 pr-3 font-medium">
-                      {f.label}
-                      {f.required ? " *" : ""}
-                    </td>
-                    <td className="py-1.5">
-                      <p className="whitespace-pre-wrap break-words">
-                        {f.value || (f.source === "seller" ? "☐ fill in yourself" : "—")}
-                      </p>
-                      {f.status !== "ok" || f.note ? (
-                        <p className="text-xs text-muted">
-                          {f.status !== "ok" ? `[${f.status}] ` : ""}
-                          {f.note}
-                        </p>
-                      ) : null}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-border text-xs uppercase text-muted">
+                    <th className="w-44 py-1 pr-3">{tr.formField}</th>
+                    <th className="py-1">{tr.value}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {v.fields.map((f) => (
+                    <tr key={f.key} className="border-b border-border align-top">
+                      <td className="py-1.5 pr-3 font-medium">
+                        {f.label}
+                        {f.required ? " *" : ""}
+                      </td>
+                      <td className="py-1.5">
+                        <p className="whitespace-pre-wrap break-words">
+                          {f.value || (f.source === "seller" ? tr.fillIn : "—")}
+                        </p>
+                        {f.status !== "ok" || f.note ? (
+                          <p className="text-xs text-muted">
+                            {f.status !== "ok" ? `[${f.status}] ` : ""}
+                            {f.note}
+                          </p>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2 print:grid-cols-2">
               <div>
-                <h3 className="font-semibold">Main image</h3>
+                <h3 className="font-semibold">{tr.mainImage}</h3>
                 {verdict && verdict.index !== null ? (
                   <p>
-                    Photo {verdict.index + 1}:{" "}
-                    {verdict.ok ? "meets the checks we can run." : verdict.issues.join(" ")}
+                    {fmt(tr.photo, { n: verdict.index + 1 })}:{" "}
+                    {verdict.ok ? tr.meetsChecks : verdict.issues.join(" ")}
                   </p>
                 ) : null}
                 <ul className="list-disc pl-5">
@@ -152,7 +192,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <p className="mt-1 text-muted">{v.images.gallery}</p>
               </div>
               <div>
-                <h3 className="font-semibold">Shot list</h3>
+                <h3 className="font-semibold">{tr.shotList}</h3>
                 <ol className="list-decimal pl-5">
                   {v.images.shot_list.map((x) => (
                     <li key={x}>{x}</li>
@@ -162,7 +202,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             </div>
             {v.gate.needs_review.length ? (
               <div>
-                <h3 className="font-semibold">Confirm before publishing</h3>
+                <h3 className="font-semibold">{tr.confirm}</h3>
                 <ul className="list-disc pl-5">
                   {v.gate.needs_review.map((x) => (
                     <li key={x}>☐ {x}</li>
@@ -175,16 +215,17 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       })}
 
       <section className="space-y-2 break-before-page">
-        <h2 className="text-lg font-semibold">Claim review</h2>
+        <h2 className="text-lg font-semibold">{tr.claimReview}</h2>
         <p className="text-muted">{r.compliance.summary}</p>
         <ul className="space-y-2">
           {r.compliance.claims.map((c) => (
             <li key={c.id}>
-              <b>{c.status}</b> “{c.claim_text}” → {c.action.replace("_", " ")}
+              <b>{t.app.compliance.statuses[c.status]}</b> “{c.claim_text}” →{" "}
+              {t.app.compliance.actions[c.action]}
               {c.suggested_fix ? ` (“${c.suggested_fix}”)` : ""}. {c.reason}
               {c.policy_refs.length ? (
                 <span className="block text-xs text-muted">
-                  Sources: {c.policy_refs.map((p) => `${p.title} (${p.url})`).join("; ")}
+                  {tr.sources}: {c.policy_refs.map((p) => `${p.title} (${p.url})`).join("; ")}
                 </span>
               ) : null}
             </li>

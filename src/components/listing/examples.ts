@@ -1,9 +1,12 @@
 import type { ProductInputDraft } from "@/lib/contracts";
 
-/** Demo inputs for the "Try an example" button and the 3-minute demo. Owner: WS3. */
-export const EXAMPLES: { label: string; input: ProductInputDraft }[] = [
+/**
+ * Demo inputs for the "Try an example" buttons and the 3-minute demo.
+ * Button labels live in the dictionary (app.form.examples[key]). Owner: WS3.
+ */
+export const EXAMPLES: { key: "cup" | "board"; input: ProductInputDraft }[] = [
   {
-    label: "Collapsible silicone cup (risky claims)",
+    key: "cup",
     input: {
       title_zh: "硅胶折叠水杯 便携旅行杯 带盖",
       description_zh:
@@ -17,7 +20,7 @@ export const EXAMPLES: { label: string; input: ProductInputDraft }[] = [
     },
   },
   {
-    label: "Bamboo cutting board (antibacterial claim)",
+    key: "board",
     input: {
       title_zh: "天然竹砧板 加厚菜板",
       description_zh:

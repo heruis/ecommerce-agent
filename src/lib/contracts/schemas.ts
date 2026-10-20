@@ -65,6 +65,8 @@ export const ProductImage = z.object({
   media_type: z.enum(["image/jpeg", "image/png", "image/webp"]),
   // ~650 KB per photo keeps 4 photos under Vercel's 4.5 MB request limit.
   data: z.string().max(900_000, "Each photo must be under about 650 KB after resizing"),
+  /** Share of near-white pixels on the photo's outer border, measured in the browser. */
+  white_ratio: z.number().min(0).max(1).optional(),
 });
 export type ProductImage = z.infer<typeof ProductImage>;
 
@@ -151,6 +153,11 @@ export const KeywordSet = z.object({
     .default([])
     .describe("4-8 TikTok hashtags without the # sign, lowercase, no spaces"),
   rationale: z.string().describe("One or two sentences on the keyword strategy"),
+  /** Keywords that were also real Amazon search-box suggestions. Filled in by code. */
+  from_search_box: z
+    .array(z.string())
+    .default([])
+    .describe("Always return an empty list; filled in by code"),
 });
 export type KeywordSet = z.infer<typeof KeywordSet>;
 
