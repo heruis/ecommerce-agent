@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-label="The cup on a rock at a campsite with mountains and a tent">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#bfdbfe"/>
+      <stop offset="1" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="band" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#3f6fd1"/>
+      <stop offset="0.35" stop-color="#6a95ef"/>
+      <stop offset="1" stop-color="#3a64c0"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#sky)"/>
+  <circle cx="640" cy="170" r="60" fill="#fde68a"/>
+  <path d="M0 470 L170 250 L300 420 L420 230 L600 470 Z" fill="#94a3b8"/>
+  <path d="M170 250 L215 308 L190 300 L160 320 L130 300 Z" fill="#f8fafc"/>
+  <path d="M420 230 L470 295 L440 285 L410 305 L380 290 Z" fill="#f8fafc"/>
+  <path d="M380 470 L560 300 L800 470 Z" fill="#64748b"/>
+  <rect y="460" width="800" height="340" fill="#86b06a"/>
+  <path d="M60 520 L170 400 L280 520 Z" fill="#f97316"/>
+  <path d="M170 400 L170 520 L210 520 Z" fill="#ea580c"/>
+  <path d="M150 520 L170 470 L190 520 Z" fill="#7c2d12"/>
+  <ellipse cx="520" cy="690" rx="230" ry="60" fill="#78716c"/>
+  <ellipse cx="520" cy="672" rx="215" ry="48" fill="#a8a29e"/>
+  <g transform="translate(330 300) scale(0.48)">
+    <path d="M245 520 L555 520 L540 668 Q538 690 515 690 L285 690 Q262 690 260 668 Z" fill="url(#band)"/>
+    <ellipse cx="400" cy="520" rx="155" ry="20" fill="#2f5bb8"/>
+    <path d="M232 430 L568 430 L555 520 L245 520 Z" fill="url(#band)"/>
+    <ellipse cx="400" cy="430" rx="168" ry="22" fill="#2f5bb8"/>
+    <path d="M218 340 L582 340 L568 430 L232 430 Z" fill="url(#band)"/>
+    <ellipse cx="400" cy="340" rx="182" ry="24" fill="#2f5bb8"/>
+    <path d="M205 262 L595 262 L582 340 L218 340 Z" fill="url(#band)"/>
+    <ellipse cx="400" cy="262" rx="198" ry="34" fill="#e2e8f0"/>
+    <ellipse cx="400" cy="252" rx="182" ry="28" fill="#f8fafc" stroke="#cbd5e1" stroke-width="3"/>
+  </g>
+  <path d="M560 470 Q575 440 560 415 Q545 390 565 365" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.8"/>
+</svg>
