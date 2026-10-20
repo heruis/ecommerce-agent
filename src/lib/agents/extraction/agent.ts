@@ -1,5 +1,6 @@
 import { ProductFacts, type ProductInput } from "@/lib/contracts";
 import { structuredCall, type AgentContext } from "@/lib/harness";
+import { normalizeMaterials } from "../shared/materials";
 import { renderSellerInput } from "../shared/seller-input";
 import { mockExtraction } from "./mock";
 import { EXTRACTION_SYSTEM } from "./prompt";
@@ -26,7 +27,7 @@ export async function runExtraction(
     schema: ProductFacts,
     mock: () => ({ json: mockExtraction(input) }),
   });
-  return groundingCheck(facts, input);
+  return groundingCheck(normalizeMaterials(facts), input);
 }
 
 /**
