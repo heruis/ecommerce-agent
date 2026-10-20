@@ -1,8 +1,12 @@
 import type { KeywordSet, ProductFacts } from "@/lib/contracts";
 import { usageProfile } from "../shared/use-cases";
 
-/** Deterministic stand-in for the keyword agent (AI_MODE=mock). */
-export function mockKeywords(facts: ProductFacts): KeywordSet {
+/**
+ * Deterministic stand-in for the keyword agent (AI_MODE=mock). When real
+ * search-box phrases are supplied (tests inject them), it prefers the ones
+ * that name the product, like the live prompt asks the model to.
+ */
+export function mockKeywords(facts: ProductFacts, suggestions: string[] = []): KeywordSet {
   const type = facts.product_type.toLowerCase();
   const words = type.split(" ");
   const noun = words.slice(-1)[0] ?? "product";
@@ -12,6 +16,10 @@ export function mockKeywords(facts: ProductFacts): KeywordSet {
   const features = facts.facts
     .filter((f) => f.attribute === "feature")
     .map((f) => f.value.toLowerCase());
+  const realPhrases = suggestions
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => s.includes(noun))
+    .slice(0, 3);
 
   const primary = unique([
     type,
@@ -21,6 +29,7 @@ export function mockKeywords(facts: ProductFacts): KeywordSet {
   ]).slice(0, 5);
 
   const secondary = unique([
+    ...realPhrases,
     `portable ${noun}`,
     `${noun} for ${m2}`,
     `${noun} for ${m3}`,
@@ -46,6 +55,7 @@ export function mockKeywords(facts: ProductFacts): KeywordSet {
     secondary,
     hashtags,
     rationale: `Lead with the product type "${type}" and its material, then cover use cases (${use.modifiers.join(", ")}) and feature variations shoppers type. AI-suggested; no search-volume data.`,
+    from_search_box: [],
   };
 }
 

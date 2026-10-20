@@ -4,3 +4,6 @@ export { runJudge } from "./judge/agent";
 export { runKeywords } from "./keywords/agent";
 export { runLocalization } from "./localization/agent";
 export { runImageCheck } from "./images/agent";
+export { runAuditFix, runStructureListing } from "./audit/agent";
+export { runAppealAnalysis } from "./appeal/agent";
+export { runExplain } from "./explain/agent";

@@ -8,13 +8,13 @@ The capstone needs four services: **Vercel** (hosting), **Claude API** (the agen
 
 ## At a glance
 
-| Service            | Variables it produces                                                                          | Where you find them                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Modes (no service) | `AI_MODE=live`, `DATA_MODE=supabase`, `BILLING_MODE=mock` → `stripe` later, `RAG_MODE=lexical` | you type them                                                                  |
-| Claude API         | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL_SMART`, `ANTHROPIC_MODEL_FAST`, `PRICE_*_PER_MTOK`       | console.anthropic.com → API Keys; model IDs and prices from the Anthropic docs |
-| Supabase           | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`      | Supabase → Project Settings → API Keys                                         |
-| Stripe (test mode) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO`                            | Stripe dashboard (test mode) → Developers / Product catalog                    |
-| Vercel             | `NEXT_PUBLIC_APP_URL` (optional)                                                               | your production URL; if empty the app uses Vercel's production URL             |
+| Service            | Variables it produces                                                                                | Where you find them                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| Modes (no service) | `AI_MODE=live`, `DATA_MODE=supabase`, `BILLING_MODE=mock` → `stripe` later, `RAG_MODE=lexical`       | you type them                                                                  |
+| Claude API         | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL_SMART`, `ANTHROPIC_MODEL_FAST`, `PRICE_*_PER_MTOK`             | console.anthropic.com → API Keys; model IDs and prices from the Anthropic docs |
+| Supabase           | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`            | Supabase → Project Settings → API Keys                                         |
+| Stripe (test mode) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO`; optional `STRIPE_PRICE_ID_PACK` | Stripe dashboard (test mode) → Developers / Product catalog                    |
+| Vercel             | `NEXT_PUBLIC_APP_URL` (optional)                                                                     | your production URL; if empty the app uses Vercel's production URL             |
 
 `NEXT_PUBLIC_*` values are inlined into the browser bundle at build time: after adding or changing one, **redeploy**.
 
@@ -42,9 +42,9 @@ The capstone needs four services: **Vercel** (hosting), **Claude API** (the agen
 ## 3. Supabase (15 min)
 
 1. https://supabase.com → **New project** (region near Vercel's, e.g. US West). Save the database password in a password manager.
-2. **SQL Editor → New query** → paste all of `supabase/migrations/20261018000000_init.sql` → **Run**. Tables `profiles`, `listings`, `pipeline_runs`, `stripe_events`, `policy_chunks` appear in the Table Editor.
-3. **Authentication → URL Configuration**: Site URL `<domain>`; add redirect URL `<domain>/auth/callback` (and `http://localhost:3000/auth/callback` for local dev).
-4. **Authentication → Sign In / Providers → Email**: on. Turn **Confirm email** off for the class demo (sign-up logs straight in; the built-in mailer is rate-limited).
+2. **SQL Editor → New query** → paste all of `supabase/migrations/20261018000000_init.sql` → **Run**, then the same for `supabase/migrations/20261020000000_compliance_suite.sql`. Tables `profiles`, `listings`, `pipeline_runs`, `stripe_events`, `policy_chunks`, `evidence`, `tool_runs` appear in the Table Editor.
+3. **Authentication → URL Configuration**: Site URL `<domain>`; add redirect URLs `<domain>/auth/callback` and `<domain>/auth/confirm` (and `http://localhost:3000/**` for local dev).
+4. **Authentication → Sign In / Providers → Email**: on. Email verification (6-digit code or link), password reset and phone codes need dashboard settings that no key controls: custom SMTP, **Confirm email**, two email templates and, for phone, Twilio. Follow [`docs/AUTH_SETUP.md`](AUTH_SETUP.md); until custom SMTP is set up, keep **Confirm email** off, because Supabase's built-in mailer only delivers to your Supabase team.
 5. **Project Settings → API Keys** → paste into Vercel:
    ```
    DATA_MODE=supabase
@@ -71,13 +71,13 @@ Until you have these keys, keep `BILLING_MODE=mock`: the upgrade button then use
    STRIPE_WEBHOOK_SECRET=whsec_...
    STRIPE_PRICE_ID_PRO=price_...
    ```
-7. Redeploy → Billing → **Upgrade to Pro** → card `4242 4242 4242 4242`, any future date, any CVC → plan shows Pro with 50 runs.
+7. Redeploy → Billing → **Upgrade to Pro** → card `4242 4242 4242 4242`, any future date, any CVC → plan shows Pro with at least 50 credits. **Buy 20 credits** ($4.99, one-time) needs nothing else in Stripe: checkout uses inline `price_data` (set `STRIPE_PRICE_ID_PACK` only if you want to manage that price in Stripe). The same webhook events cover it.
 
 ## Checklist
 
 - [ ] Vercel project builds and the URL opens (1)
 - [ ] Claude key + both model IDs + prices; `/api/health` shows `ai: live` (2)
-- [ ] Supabase migration run, auth URLs set, confirm email off, keys pasted; `data: supabase` (3)
+- [ ] Supabase migrations run, auth URLs set, `docs/AUTH_SETUP.md` done (or confirm email off until SMTP exists), keys pasted; `data: supabase` (3)
 - [ ] Stripe test keys, price, portal, webhook; `billing: stripe` (4)
 - [ ] `pnpm check:env` locally with the same values is green
 - [ ] Smoke test on `<domain>` (see `docs/DEPLOYMENT.md`)

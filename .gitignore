@@ -42,3 +42,6 @@ evals/results/*
 # Claude Code personal layer (team layer in .claude/ is committed)
 .claude/settings.local.json
 CLAUDE.local.md
+
+# Claude Code agent worktrees (parallel branches)
+.claude/worktrees/

@@ -1,5 +1,7 @@
 import type {
   CreditResult,
+  EvidenceInput,
+  EvidenceItem,
   Listing,
   ListingDraft,
   ListingSummary,
@@ -10,6 +12,12 @@ import type {
   Repo,
   RunRecord,
   SessionUser,
+  ToolKind,
+  ToolRun,
+  ToolRunOf,
+  ToolRunStatus,
+  ToolRunSummary,
+  UserDataExport,
 } from "@/lib/contracts";
 import { env } from "@/lib/env";
 import { newId, nowIso } from "@/lib/utils/ids";
@@ -19,6 +27,8 @@ interface Store {
   listings: Map<string, Listing>;
   runs: Map<string, RunRecord & { user_id: string }>;
   stripeEvents: Map<string, string>;
+  evidence: Map<string, EvidenceItem>;
+  toolRuns: Map<string, ToolRun>;
 }
 
 // Survive Next.js hot reloads in dev by parking the store on globalThis.
@@ -30,6 +40,8 @@ function store(): Store {
     listings: new Map(),
     runs: new Map(),
     stripeEvents: new Map(),
+    evidence: new Map(),
+    toolRuns: new Map(),
   };
   return g.__shelfpassMemoryStore;
 }
@@ -183,6 +195,123 @@ export class MemoryRepo implements Repo {
   async releaseStripeEvent(eventId: string) {
     store().stripeEvents.delete(eventId);
   }
+
+  async addCredits(userId: string, amount: number) {
+    const p = store().profiles.get(userId);
+    if (!p) throw new Error(`No profile ${userId}`);
+    p.credits_remaining += Math.max(0, Math.floor(amount));
+    return p.credits_remaining;
+  }
+
+  // ---- evidence library --------------------------------------------------
+
+  async listEvidence(userId: string) {
+    return [...store().evidence.values()]
+      .filter((e) => e.user_id === userId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }
+
+  async createEvidence(userId: string, input: EvidenceInput) {
+    const item: EvidenceItem = {
+      ...input,
+      id: newId("evd"),
+      user_id: userId,
+      created_at: nowIso(),
+    };
+    store().evidence.set(item.id, item);
+    return item;
+  }
+
+  async deleteEvidence(userId: string, evidenceId: string) {
+    const e = store().evidence.get(evidenceId);
+    if (!e || e.user_id !== userId) return false;
+    return store().evidence.delete(evidenceId);
+  }
+
+  // ---- audits and appeals -------------------------------------------------
+
+  async createToolRun<K extends ToolKind>(userId: string, kind: K, input: ToolRunOf<K>["input"]) {
+    const now = nowIso();
+    const run = {
+      id: newId(kind === "audit" ? "aud" : "apl"),
+      user_id: userId,
+      kind,
+      status: "running",
+      input,
+      result: null,
+      error: null,
+      created_at: now,
+      updated_at: now,
+    } as unknown as ToolRunOf<K>;
+    store().toolRuns.set(run.id, run);
+    return run;
+  }
+
+  async saveToolRun<K extends ToolKind>(
+    userId: string,
+    runId: string,
+    update: { status: ToolRunStatus; result: ToolRunOf<K>["result"]; error: string | null },
+  ) {
+    const run = await this.getToolRun(userId, runId);
+    if (!run) throw new Error("Run not found");
+    Object.assign(run, update, { updated_at: nowIso() });
+  }
+
+  async getToolRun(userId: string, runId: string) {
+    const r = store().toolRuns.get(runId);
+    return r && r.user_id === userId ? r : null;
+  }
+
+  async listToolRuns(userId: string, kind?: ToolKind): Promise<ToolRunSummary[]> {
+    return [...store().toolRuns.values()]
+      .filter((r) => r.user_id === userId && (!kind || r.kind === kind))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .map(toolRunSummary);
+  }
+
+  // ---- account -----------------------------------------------------------
+
+  async exportUserData(userId: string): Promise<UserDataExport> {
+    const s = store();
+    return {
+      exported_at: nowIso(),
+      profile: s.profiles.get(userId) ?? null,
+      listings: [...s.listings.values()].filter((l) => l.user_id === userId),
+      runs: [...s.runs.values()]
+        .filter((r) => r.user_id === userId)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .map(({ spans, user_id, ...run }) => run),
+      tool_runs: [...s.toolRuns.values()].filter((r) => r.user_id === userId),
+      evidence: await this.listEvidence(userId),
+    };
+  }
+
+  async deleteUserData(userId: string) {
+    const s = store();
+    for (const [id, l] of s.listings) if (l.user_id === userId) s.listings.delete(id);
+    for (const [id, r] of s.runs) if (r.user_id === userId) s.runs.delete(id);
+    for (const [id, r] of s.toolRuns) if (r.user_id === userId) s.toolRuns.delete(id);
+    for (const [id, e] of s.evidence) if (e.user_id === userId) s.evidence.delete(id);
+    s.profiles.delete(userId);
+  }
+}
+
+/** Dashboard row for an audit or appeal: platform and a short title from the input. */
+export function toolRunSummary(r: ToolRun): ToolRunSummary {
+  const text = r.kind === "audit" ? r.input.listing_text : r.input.notice;
+  const firstLine =
+    text
+      .split(/\n/)
+      .find((l) => l.trim())
+      ?.trim() ?? "";
+  return {
+    id: r.id,
+    kind: r.kind,
+    status: r.status,
+    platform: r.input.platform,
+    title: firstLine.length > 90 ? `${firstLine.slice(0, 87)}…` : firstLine,
+    created_at: r.created_at,
+  };
 }
 
 /** Test helper: wipe the in-memory store. */

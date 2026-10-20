@@ -8,6 +8,15 @@
 import type { ListingDraft, Platform, PolicyRef, ProductInput } from "./schemas";
 import type { Listing, ListingSummary, Plan, Profile, RunRecord } from "./records";
 import type { PipelineResult } from "./schemas";
+import type {
+  EvidenceInput,
+  EvidenceItem,
+  ToolKind,
+  ToolRun,
+  ToolRunOf,
+  ToolRunStatus,
+  ToolRunSummary,
+} from "./suite";
 
 // ---------------------------------------------------------------------------
 // Auth (WS4)
@@ -66,14 +75,56 @@ export interface Repo {
   recordStripeEvent(eventId: string, type: string): Promise<boolean>;
   /** Forget an event whose handler failed, so Stripe's retry is applied. */
   releaseStripeEvent(eventId: string): Promise<void>;
+  /** Add purchased credits atomically (credit packs). Returns the new balance. */
+  addCredits(userId: string, amount: number): Promise<number>;
+
+  // Evidence library
+  listEvidence(userId: string): Promise<EvidenceItem[]>;
+  createEvidence(userId: string, input: EvidenceInput): Promise<EvidenceItem>;
+  deleteEvidence(userId: string, evidenceId: string): Promise<boolean>;
+
+  // Audits and appeals ("tool runs")
+  createToolRun<K extends ToolKind>(
+    userId: string,
+    kind: K,
+    input: ToolRunOf<K>["input"],
+  ): Promise<ToolRunOf<K>>;
+  saveToolRun<K extends ToolKind>(
+    userId: string,
+    runId: string,
+    update: {
+      status: ToolRunStatus;
+      result: ToolRunOf<K>["result"];
+      error: string | null;
+    },
+  ): Promise<void>;
+  getToolRun(userId: string, runId: string): Promise<ToolRun | null>;
+  listToolRuns(userId: string, kind?: ToolKind): Promise<ToolRunSummary[]>;
+
+  // Account (export and delete the user's own data)
+  exportUserData(userId: string): Promise<UserDataExport>;
+  /** Delete every row the user owns, including the profile. Auth user deletion is separate. */
+  deleteUserData(userId: string): Promise<void>;
+}
+
+export interface UserDataExport {
+  exported_at: string;
+  profile: Profile | null;
+  listings: Listing[];
+  runs: Omit<RunRecord, "spans">[];
+  tool_runs: ToolRun[];
+  evidence: EvidenceItem[];
 }
 
 // ---------------------------------------------------------------------------
 // Billing (WS4)
 // ---------------------------------------------------------------------------
 
+/** What a checkout buys: the Pro subscription or a one-time credit pack. */
+export type BillingProduct = "pro" | "pack";
+
 export interface BillingProvider {
-  createCheckoutSession(user: SessionUser): Promise<{ url: string }>;
+  createCheckoutSession(user: SessionUser, product?: BillingProduct): Promise<{ url: string }>;
   createPortalSession(user: SessionUser): Promise<{ url: string }>;
 }
 

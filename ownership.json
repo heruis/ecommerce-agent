@@ -23,7 +23,7 @@
       ]
     },
     "ws2": {
-      "name": "WS2 — Trust layer (compliance agent, photo check, RAG, guardrails, marketplace rules, scoring, evals)",
+      "name": "WS2 — Trust layer (compliance, audit, appeal and explain agents, photo check, RAG, guardrails, marketplace rules, scoring, evals)",
       "branch_prefixes": ["ws2/"],
       "owns": [
         "src/lib/agents/compliance/**",
@@ -37,11 +37,15 @@
         "evals/**",
         "scripts/ingest-kb.ts",
         "docs/report/sections/ws2-*.md",
-        "docs/team/status/ws2.md"
+        "docs/team/status/ws2.md",
+        "src/lib/agents/audit/**",
+        "src/lib/agents/appeal/**",
+        "src/lib/agents/explain/**",
+        "src/lib/evidence/**"
       ]
     },
     "ws3": {
-      "name": "WS3 — Product UI (pages, components, export, e2e)",
+      "name": "WS3 — Product UI (marketing site, pricing, app pages, previews, design system, export, e2e)",
       "branch_prefixes": ["ws3/"],
       "owns": [
         "src/app/(marketing)/**",
@@ -55,7 +59,11 @@
         "public/**",
         "e2e/**",
         "docs/report/sections/ws3-*.md",
-        "docs/team/status/ws3.md"
+        "docs/team/status/ws3.md",
+        "design-system/**",
+        "src/lib/i18n/dictionaries/*/app.ts",
+        "src/lib/i18n/dictionaries/*/marketing.ts",
+        "src/lib/i18n/dictionaries/*/tools.ts"
       ],
       "except": ["src/components/auth/**"]
     },
@@ -78,7 +86,12 @@
         "scripts/doctor.ts",
         "vercel.json",
         "docs/report/sections/ws4-*.md",
-        "docs/team/status/ws4.md"
+        "docs/team/status/ws4.md",
+        "src/lib/i18n/dictionaries/*/auth.ts",
+        "src/lib/i18n/dictionaries/*/account.ts",
+        "src/lib/i18n/dictionaries/*/billing.ts",
+        "src/app/api/account/**",
+        "docs/AUTH_SETUP.md"
       ]
     }
   }

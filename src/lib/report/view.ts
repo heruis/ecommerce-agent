@@ -1,12 +1,15 @@
-import type { ChannelResult, Listing, ListingDraft, Platform } from "@/lib/contracts";
+import type { ChannelResult, Listing, ListingDraft, Platform, RiskScore } from "@/lib/contracts";
 import { allText } from "@/lib/guardrails/gate";
 import { scanClaims } from "@/lib/guardrails/claims-lexicon";
 import { validateListing } from "@/lib/rules";
 import { buildPublishFields } from "./fields";
+import { computeRisk } from "./risk";
 
 export interface ChannelView extends ChannelResult {
   /** True when the seller edited this channel's copy after generation. */
   edited: boolean;
+  /** Takedown-risk score of the copy the seller would publish (computed in code). */
+  risk: RiskScore;
 }
 
 /**
@@ -20,7 +23,16 @@ export function channelViews(listing: Listing): ChannelView[] {
   if (!r) return [];
   return r.channels.map((c) => {
     const edit = listing.edited?.[c.platform];
-    return edit ? withEdits(listing, c, edit) : { ...c, edited: false };
+    const view = edit ? withEdits(listing, c, edit) : { ...c, edited: false };
+    return {
+      ...view,
+      risk: computeRisk({
+        listing: view.listing,
+        compliance: r.compliance,
+        validation: view.validation,
+        evidence: listing.input.evidence,
+      }),
+    };
   });
 }
 
@@ -28,7 +40,11 @@ export function channelView(listing: Listing, platform: Platform): ChannelView |
   return channelViews(listing).find((c) => c.platform === platform) ?? null;
 }
 
-function withEdits(listing: Listing, c: ChannelResult, edit: ListingDraft): ChannelView {
+function withEdits(
+  listing: Listing,
+  c: ChannelResult,
+  edit: ListingDraft,
+): Omit<ChannelView, "risk"> {
   const r = listing.result!;
   const validation = validateListing(edit, c.platform, { brand: listing.input.brand });
   const restricted = scanClaims(allText(edit), listing.input.evidence).filter(

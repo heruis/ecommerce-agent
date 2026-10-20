@@ -1,23 +1,26 @@
+"use client";
+
+import { ImageOff } from "lucide-react";
 import type { ImageReport, ProductImage } from "@/lib/contracts";
-import { Badge, Card } from "@/components/ui";
+import { fmt } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 import { platformLabel } from "@/lib/rules";
+import { Badge, Card } from "@/components/ui";
 
-const BACKGROUND: Record<string, string> = {
-  pure_white: "pure white",
-  light_plain: "light, plain",
-  busy: "busy / scene",
-  unknown: "not checked",
-};
-
-/** The seller's photos with what the vision check saw and the main-image verdict per channel. Owner: WS3. */
+/**
+ * The seller's photos with what the vision check saw, the measured border
+ * whiteness and the main-image verdict per channel. Owner: WS3.
+ */
 export function PhotosCard({ photos, report }: { photos: ProductImage[]; report: ImageReport }) {
+  const t = useT().app.photos;
   if (photos.length === 0) {
     return (
-      <Card className="space-y-1">
-        <h2 className="font-semibold">Photos</h2>
-        <p className="text-sm text-muted">
-          No photos uploaded. Each channel tab has the main-image rules and a shot list to follow.
-        </p>
+      <Card className="flex items-start gap-3">
+        <ImageOff aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-muted" />
+        <div>
+          <h2 className="font-semibold">{t.cardTitle}</h2>
+          <p className="text-sm text-muted">{t.none}</p>
+        </div>
       </Card>
     );
   }
@@ -25,18 +28,16 @@ export function PhotosCard({ photos, report }: { photos: ProductImage[]; report:
   return (
     <Card className="space-y-4">
       <div>
-        <h2 className="font-semibold">Photos</h2>
-        <p className="text-xs text-muted">
-          AI photo check — confirm against each site&apos;s current image requirements.
-        </p>
+        <h2 className="font-semibold">{t.cardTitle}</h2>
+        <p className="text-xs text-muted">{t.cardNote}</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {report.main_image.map((m) => (
           <Badge key={m.platform} tone={m.index === null ? "neutral" : m.ok ? "ok" : "warn"}>
             {platformLabel(m.platform)}:{" "}
             {m.index === null
-              ? "no main photo"
-              : `photo ${m.index + 1} ${m.ok ? "OK as main" : "needs work"}`}
+              ? t.noMain
+              : fmt(m.ok ? t.mainOk : t.mainNeedsWork, { n: m.index + 1 })}
           </Badge>
         ))}
       </div>
@@ -51,33 +52,34 @@ export function PhotosCard({ photos, report }: { photos: ProductImage[]; report:
                 alt={o?.alt_text ?? p.name}
                 className="h-24 w-24 shrink-0 rounded-lg border border-border object-cover"
               />
-              <div className="min-w-0 text-xs">
-                <p className="font-medium">
-                  Photo {i + 1}
-                  {report.analysis?.suggested_main_index === i ? " · suggested main" : ""}
+              <div className="min-w-0 space-y-0.5 text-xs">
+                <p className="font-semibold">
+                  {fmt(t.photo, { n: i + 1 })}
+                  {report.analysis?.suggested_main_index === i ? ` · ${t.suggestedMain}` : ""}
                 </p>
+                {p.white_ratio !== undefined ? (
+                  <p>{fmt(t.measured, { pct: Math.round(p.white_ratio * 100) })}</p>
+                ) : null}
                 {o ? (
                   <>
                     <p className="text-muted">{o.shows}</p>
-                    <p>Background: {BACKGROUND[o.background]}</p>
-                    {o.has_text_or_logo ? (
-                      <p className="text-warn">Text or logo on the photo</p>
-                    ) : null}
-                    {o.has_watermark ? <p className="text-warn">Watermark</p> : null}
-                    {o.multiple_items_or_props ? (
-                      <p className="text-warn">Props or extra items</p>
-                    ) : null}
+                    <p>
+                      {t.background}: {t.backgrounds[o.background]}
+                    </p>
+                    {o.has_text_or_logo ? <p className="text-warn">{t.textOrLogo}</p> : null}
+                    {o.has_watermark ? <p className="text-warn">{t.watermark}</p> : null}
+                    {o.multiple_items_or_props ? <p className="text-warn">{t.props}</p> : null}
                     {o.quality_issues.map((q) => (
                       <p key={q} className="text-muted">
                         {q}
                       </p>
                     ))}
-                    <p className="mt-1">
-                      Alt text: <span className="text-muted">{o.alt_text}</span>
+                    <p className="pt-1">
+                      {t.altText}: <span className="text-muted">{o.alt_text}</span>
                     </p>
                   </>
                 ) : (
-                  <p className="text-muted">Not analyzed.</p>
+                  <p className="text-muted">{t.notAnalyzed}</p>
                 )}
               </div>
             </li>
@@ -85,11 +87,13 @@ export function PhotosCard({ photos, report }: { photos: ProductImage[]; report:
         })}
       </ul>
       {report.main_image
-        .filter((m) => m.issues.length > 0)
+        .filter((m) => m.issues.length > 0 && m.index !== null)
         .map((m) => (
-          <div key={m.platform} className="text-xs">
-            <p className="font-medium">{platformLabel(m.platform)} main image</p>
-            <ul className="list-disc pl-5 text-muted">
+          <div key={m.platform} className="rounded-lg bg-warn/5 p-3 text-xs">
+            <p className="font-semibold">
+              {fmt(t.mainImageOn, { channel: platformLabel(m.platform) })}
+            </p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted">
               {m.issues.map((x) => (
                 <li key={x}>{x}</li>
               ))}

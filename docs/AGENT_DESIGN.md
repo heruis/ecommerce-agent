@@ -1,6 +1,6 @@
 # Agent design
 
-How the AI backend works, stage by stage, and how it maps onto the course concepts (LLM → agent → harness → product).
+How the AI backend works, stage by stage, and how it maps onto the course concepts (LLM → agent → harness → product). §1–8 cover the core report; §9 covers the compliance suite (audit, appeal, explanations, risk score) merged from the team's Listing Copilot prototype (D-016).
 
 ## 1. The harness (course Module 1)
 
@@ -55,12 +55,14 @@ Why one localization agent per channel but one compliance review: each channel h
 
 - **Job:** facts → one `KeywordSet` for every selected channel (3–5 primary, 5–15 secondary, 4–8 TikTok hashtags). Always labeled **AI-suggested**: we have no search-volume data.
 - **Tier / effort:** fast / low. **Post-processing in code:** lowercase, dedupe, drop promotional words; hashtags lose `#` and spaces.
+- **Real shopper phrases** (`keywords/suggest.ts`, ported from Listing Copilot): in live mode, when Amazon US is selected, up to 3 seeds go to Amazon's public search-box suggestion endpoint (2.5 s timeout; any failure returns nothing and the run continues). The phrases reach the model as data inside tags, never as instructions. Code, not the model, fills `from_search_box` with the final keywords that exactly match a phrase; the UI badges them "Seen in Amazon's search box". Mock mode and tests never call the network (tests inject a fake `suggest`).
 
 ### Photo check — `agents/images` (WS2)
 
 - **Job:** up to 4 seller photos → `ImageAnalysis` (per photo: what it shows, background pure white / light plain / busy, text or logo, watermark, product fill, props, quality issues, alt text; suggested main photo).
 - **Tier / effort:** fast / low. **Pattern:** single structured call with image blocks. Runs only when photos were uploaded, in parallel with keywords.
 - **The model describes; code decides.** `report/images.ts` turns observations into a main-image verdict per channel (Amazon needs pure white, no text, no props; TikTok and Shopify are looser) and builds each channel's rules, gallery guidance and shot list from the facts.
+- **Measured background** (ported from Listing Copilot): the browser counts near-white pixels on the outer 4% of each photo before resizing and sends `white_ratio`. The photo check gets it as a `<measurement>` to trust over its impression, and `applyWhiteMeasurement` uses it in code: ≥ 97% white border passes Amazon's pure-white rule; below that, the verdict states the measured percentage. This works in mock mode too, because it needs no model.
 - **Guardrails:** photo bytes are checked against the declared type before any call; file names are sanitized; the prompt says text inside photos is data. Photo bytes are left out of traces. Mock mode cannot see pixels and says so.
 
 ### Localization — `agents/localization` (WS1)
@@ -85,7 +87,8 @@ Runs once per channel. Applies rewrite/remove actions wherever the phrase appear
 ### Report builder — `report/` (WS1, code)
 
 - `fields.ts` maps each gated listing onto that site's "add product" form, field by field and in order (from `rules/*.ts` `form`): each field is _generated_ (from the listing), _fact_ (from the seller's input, e.g. brand, material, weight) or _seller_ (only the seller can fill it, e.g. UPC, price), with status ok / warning / missing and the validator's message as a note.
-- `images.ts` builds main-image verdicts and per-channel photo guidance.
+- `images.ts` builds main-image verdicts (incl. the measured white border) and per-channel photo guidance.
+- `risk.ts` computes each channel's takedown-risk score (§9).
 - `view.ts` (`channelViews`) is the one read path for the UI, the printable report and exports: a channel with seller edits is re-validated, re-screened and re-mapped in code, so an edit can never skip the checks.
 - `markdown.ts` renders the downloadable report.
 
@@ -122,7 +125,7 @@ Iterate on a prompt with the skill (it reads the same prompt files), then confir
 
 ## 6. Models and cost
 
-Two tiers, set by env (`ANTHROPIC_MODEL_SMART`, `ANTHROPIC_MODEL_FAST`) — copy current IDs from the Anthropic models overview page (see `docs/SETUP.md`). Smart: localization, compliance. Fast: extraction, photo check, keywords, judge. Prices for the trace's cost column come from env as well. System prompts are sent with `cache_control` so repeated runs hit the prompt cache (watch `cache_read_tokens` in traces).
+Two tiers, set by env (`ANTHROPIC_MODEL_SMART`, `ANTHROPIC_MODEL_FAST`) — copy current IDs from the Anthropic models overview page (see `docs/SETUP.md`). Smart: localization, compliance, audit fix, appeal. Fast: extraction, photo check, keywords, judge, explanations, structuring a messy audit paste. Prices for the trace's cost column come from env as well. System prompts are sent with `cache_control` so repeated runs hit the prompt cache (watch `cache_read_tokens` in traces).
 
 Per-run budget (`harness/budget.ts`): 40 calls · 400k tokens · $1.50 · 240 s. Typical mock run for three channels: about 13 calls. Measure live cost per run in traces before changing the Pro cap.
 
@@ -136,3 +139,53 @@ Per-run budget (`harness/budget.ts`): 40 calls · 400k tokens · $1.50 · 240 s.
 ## 8. Not built: direct publishing
 
 The report stops at "every field, ready to paste". Publishing through Amazon SP-API, the TikTok Shop Partner API or the Shopify Admin API needs developer registration, app review and per-seller authorization that take longer than the capstone's one week. The `fields` contract (form key → value) is what a future publisher would send; see `docs/API_SETUP.md`.
+
+## 9. Compliance suite: audit, appeal, explain, risk
+
+Features merged from the team's Listing Copilot prototype, rebuilt on this harness (tracer, budget, mocks, guardrails) instead of a second AI stack (D-016). Code: `src/lib/agents/{audit,appeal,explain}`, `src/lib/pipeline/{audit,appeal,tool-run,tool-route}.ts`, `src/lib/report/risk.ts`, `src/lib/evidence`.
+
+### Takedown-risk score — `report/risk.ts` (code)
+
+- Deterministic, 0–100, computed from what is still in the copy: lexicon hits (restricted +40, unproven +10 / +18), compliance findings still present, rule errors (+10 each, cap 30), warnings (+2, cap 8), untranslated Chinese (+15). Floors: any restricted claim ⇒ ≥ 60 (high); any unproven claim ⇒ ≥ 25 (medium). Levels: < 20 low, < 50 medium, else high.
+- Added to every `ChannelView` (generated and edited copy) and shown as a badge with reasons on each channel tab. Same input ⇒ same score, so before/after comparisons and evals are reproducible. The UI calls it a screen of known removal signals, not a prediction of the marketplace's decision.
+
+### Listing audit — `pipeline/audit.ts` (1 credit)
+
+Stages reuse existing names (`input_guardrails → extraction → compliance → localization → output_gate → scoring`), so traces and the progress UI work unchanged.
+
+1. **Parse** the pasted listing in code (`agents/audit/parse.ts`: EN/ZH labels, bullet marks, hashtags). Only an unstructured paste goes to a fast-tier "structure" call, and every field it returns must be a verbatim substring of the paste (otherwise the parser's guess is kept): the model cannot put words in the seller's mouth.
+2. **Facts** via the existing extraction agent; **claims** via the existing compliance agent (agentic RAG, citations, lexicon backstop).
+3. **Minimal fix:** a smart-tier structured call told to change only what `<problems>` lists. Minimality is then **enforced in code** (`keepUntouched`): any field without a rule violation or risky phrase keeps its original bytes. Deterministic repairs (`agents/audit/repair.ts`: shorten at word boundaries, never mid-word; drop repeats, banned characters, Chinese, links) run as a backstop, then the normal output gate.
+4. **Before/after:** risk score and quality score (judge + `computeScore`) on both, and a field-level diff with a reason per change.
+
+Mock mode: the fix is the compliance actions plus the deterministic repairs, so the whole flow runs offline.
+
+### Takedown & appeal help — `pipeline/appeal.ts` (1 credit)
+
+- Smart-tier ReAct loop (≤ 5 turns) with `search_policy` (≤ 3 calls, filtered to the channel) and a strict `submit_appeal_analysis` tool.
+- Explanations are written in the seller's interface language (`getLocale()` → zh / en); `appeal_text` is always English, for the marketplace.
+- Checks in code after the model (`enforceAppealRules`): citations must come from this run's retrieval log; a warning when the appeal contains Chinese or says documents are "attached" while the seller listed none.
+- A notice about counterfeits or trademarks is **not** blocked by the prohibited-product screen (only prompt injection is), because such notices legitimately name those things.
+
+### Explain in Chinese — `agents/explain` (free)
+
+`POST /api/listings/:id/explain { platform }` → a fast-tier structured `SellerExplanation`: summary, back-translation (title, bullets, description) and one note per reviewed claim. Rate limited (10/min/user) with a small budget (3 calls). Code realigns notes to the claim review's order and bullets to the listing's bullet count. Shown as a panel on each channel tab. In mock mode the panel shows the English text tagged as untranslated.
+
+### Evidence library — `lib/evidence` (code)
+
+Documents the seller holds (name, kind, issuer, reference number, claims supported, expiry). `evidenceText(items, today)` renders the picked documents into the evidence text the compliance agent and `lookup_evidence` already read; expired documents are left out with a note, and the text stays under the 4,000-character input limit. A claim backed by a library document counts as verified.
+
+### Routes and money
+
+- `POST /api/audit`, `POST /api/appeal`: auth → zod → deterministic pre-screen (blocked input is never charged) → rate limit (5/min) → atomic credit → `repo.createToolRun` → SSE progress (`tool_started`, stage events, `tool_completed` / `tool_failed`) → save → refund on our own failure (`AgentError.refundable`), never on a guardrail block. Shared in `pipeline/tool-route.ts`, tested in `tool-route.test.ts`.
+- `GET /api/audit/:id`, `GET /api/appeal/:id`: owner-scoped (`repo.getToolRun(user.id, id)`).
+
+### Evals
+
+`pnpm eval --suite audit` (6 cases) and `--suite appeal` (4 cases); see `docs/EVALS.md`.
+
+### Gaps
+
+- No trademark/IP policy document in the knowledge base yet: trademark appeals come back without a citation and with a warning.
+- An audit covers one channel at a time; a "check all three channels" mode would reuse the same pipeline.
+- When a whole claim is removed in mock mode, a bullet can end up short (e.g. "For kids and adults."); the live model is told to reword these.

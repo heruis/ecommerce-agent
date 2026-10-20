@@ -25,6 +25,19 @@ Rollback: Vercel → Deployments → pick the previous one → **Promote to Prod
 
 **Supabase URL gotcha:** `NEXT_PUBLIC_SUPABASE_URL` is the bare project URL (`https://<ref>.supabase.co`). The Data API page shows it with `/rest/v1/`; with that suffix table reads still seem to work but RPC calls fail with "Invalid path specified in request URL".
 
+## Shipping site v2
+
+Branch `feat/site-v2` adds the compliance suite (audit, appeal, evidence library, risk score, explanations in Chinese), the new site and pricing page, the bilingual UI, email/phone verification, the account page and credit packs. The live URL keeps running the previous version until these steps are done, in this order:
+
+1. **Database:** Supabase → SQL Editor → run `supabase/migrations/20261020000000_compliance_suite.sql` (evidence library, `tool_runs` for audits and appeals, `add_credits()` for packs). Safe to run twice. Without it, audits, appeals, evidence and credit packs fail.
+2. **Auth dashboard:** follow [`docs/AUTH_SETUP.md`](AUTH_SETUP.md) §2–§6 — custom SMTP **before** turning on _Confirm email_ (Supabase's built-in mailer only delivers to members of your Supabase team), email templates with the 6-digit `{{ .Token }}` and `/auth/confirm` links, URL configuration with `/auth/callback` **and** `/auth/confirm`, and (optional) Twilio for phone codes.
+3. **Stripe:** nothing new to create. Credit packs use inline `price_data`; the same webhook endpoint and three events cover them. Optional: set `STRIPE_PRICE_ID_PACK` to manage the pack price in Stripe instead.
+4. **Merge** `feat/site-v2` into `main` (PR, CI green, one review).
+5. **Deploy:** from a clean checkout of `main`, `npx vercel deploy --prod` (commands above).
+6. **Smoke test** on the live URL: `docs/AUTH_SETUP.md` §8 (sign up with the email code, password reset, phone if set up, pack purchase, Pro and cancel in the portal, data export, account delete), then one report, one audit and one takedown analysis.
+
+What has been verified so far: on 2026-10-20, **before** site v2, a fresh account on the live URL signed up (email confirmation off), signed in again, upgraded Free → Pro (50 runs) with card 4242… through Stripe Checkout and the signed webhook, and cancelled in the Customer Portal back to Free. Site v2's packs, credit rules, verification flows and new tools are verified in mock mode, unit tests and the e2e suite; they need the deploy above to be verified live.
+
 ## From repo to live URL (5 steps)
 
 1. **Push to GitHub** — `main` is always deployable (CI must be green).
@@ -52,23 +65,28 @@ Rollback: Vercel → Deployments → pick the previous one → **Promote to Prod
 | `STRIPE_PRICE_ID_PRO`                           | `price_…`                                      | same                               |                                                                                                                  |
 | `VOYAGE_API_KEY`                                | if `RAG_MODE=vector`                           |                                    |                                                                                                                  |
 | `FREE_RUNS` / `PRO_RUNS_PER_PERIOD`             | `3` / `50`                                     |                                    |                                                                                                                  |
+| `PACK_CREDITS`                                  | `20` (default)                                 |                                    | credits in the one-time $4.99 pack                                                                               |
+| `STRIPE_PRICE_ID_PACK`                          | optional `price_…` (one-time)                  |                                    | if unset, checkout uses inline `price_data`                                                                      |
 
 ## After the first deploy
 
-- [ ] Supabase → SQL Editor: run `supabase/migrations/20261018000000_init.sql` once (before switching `DATA_MODE=supabase`).
-- [ ] Supabase → Authentication → URL Configuration: Site URL = production URL; add `https://<prod-domain>/auth/callback` (and the preview pattern if you test auth on previews).
-- [ ] Supabase → Authentication → Sign In / Providers → Email: turn **Confirm email** off for the class demo (sign-up logs straight in; the built-in mailer is rate-limited).
+- [ ] Supabase → SQL Editor: run `supabase/migrations/20261018000000_init.sql`, then `20261020000000_compliance_suite.sql` (before switching `DATA_MODE=supabase`). `pnpm check:env` fails with a clear message if `add_credits()` is missing.
+- [ ] Supabase → Authentication → URL Configuration: Site URL = production URL; add `https://<prod-domain>/auth/callback` and `https://<prod-domain>/auth/confirm` (and the preview pattern if you test auth on previews).
+- [ ] Email verification: set up custom SMTP, then turn **Confirm email** on and update the templates (`docs/AUTH_SETUP.md` §2–§4). Without custom SMTP, keep Confirm email off: the built-in mailer only delivers to your Supabase team.
+- [ ] Phone codes (optional): Phone provider → Twilio (`docs/AUTH_SETUP.md` §6).
 - [ ] Stripe (test mode) → Developers → Webhooks → Add endpoint `https://<prod-domain>/api/stripe/webhook`, events `checkout.session.completed`, `invoice.paid`, `customer.subscription.deleted` → copy the signing secret into `STRIPE_WEBHOOK_SECRET` → redeploy.
 - [ ] Function duration: the run route sets `maxDuration = 300`. Confirm the project's plan allows it (Project → Settings → Functions); if runs are cut off, lower the run budget or move to a queue. A three-channel live run should take about a minute: the three localization agents run in parallel.
 - [ ] Request size: Vercel caps request bodies at 4.5 MB. The form resizes photos in the browser (≤ 1024 px JPEG, ≤ ~650 KB each, 4 max), so a normal upload stays well under it.
-- [ ] Smoke test on the live URL: sign up → example + one photo → generate → check all three channel tabs → printable report → download a CSV → upgrade with `4242 4242 4242 4242` → credits = 50 → trace page.
+- [ ] Smoke test on the live URL: sign up (6-digit code) → example + one photo → generate → check all three channel tabs and one preview → Explain in Chinese → printable report → download a CSV → audit a listing → analyze a notice → buy a pack with `4242 4242 4242 4242` (+20) → Pro (balance ≥ 50) → trace page.
 - [ ] `GET /api/health` shows `ai: live, data: supabase, billing: stripe`.
 - [ ] Error states: wrong password, out of credits, blocked input, Claude API down (temporarily set a bad model ID on a preview) — each shows a clear message, never a blank page.
 
 ## Production readiness checklist (rubric: deployment 15 pts)
 
 - [ ] Live, stable URL in the README
-- [ ] Stripe sandbox checkout works end to end via webhook (upgrade, renewal via `invoice.paid`, cancel via the portal)
+- [ ] Stripe sandbox checkout works end to end via webhook (credit pack, upgrade, renewal via `invoice.paid`, cancel via the portal) — upgrade and cancel verified live on 2026-10-20 (pre-v2)
+- [ ] Email sign-up with a code, password reset, account export and delete work on the live URL
+- [ ] Terms, privacy and refund pages linked in the footer
 - [ ] Secrets only in Vercel env; none in the repo (`git log -p | grep -E "sk-ant|sk_test|sb_secret"` is empty)
 - [ ] Graceful error states (above)
 - [ ] Live eval run ≥ 80% recorded with the deployed model IDs

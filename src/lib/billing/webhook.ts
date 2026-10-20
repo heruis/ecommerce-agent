@@ -1,6 +1,6 @@
 import type Stripe from "stripe";
 import type { Repo } from "@/lib/contracts";
-import { plans } from "./plans";
+import { endPro, grantPack, renewPro, startPro } from "./credits";
 
 export type WebhookOutcome = "processed" | "duplicate" | "ignored";
 
@@ -13,10 +13,14 @@ export type WebhookOutcome = "processed" | "duplicate" | "ignored";
  * can never add credits twice. If a handler throws, the event record is
  * released so Stripe's retry is applied instead of being skipped.
  *
- *  - checkout.session.completed    -> upgrade to Pro, set the monthly credits
- *  - invoice.paid                  -> renewal: reset the monthly credits
- *  - customer.subscription.deleted -> downgrade to Free with 0 credits
+ *  - checkout.session.completed, mode "payment", product "pack", paid
+ *                                  -> add the credit pack
+ *  - checkout.session.completed, subscription
+ *                                  -> start Pro, add the monthly credits
+ *  - invoice.paid                  -> renewal: top up to the monthly credits
+ *  - customer.subscription.deleted -> back to Free, balance kept
  *  - anything else                 -> "ignored"
+ * Credit rules live in credits.ts.
  */
 export async function applyStripeEvent(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> {
   const first = await repo.recordStripeEvent(event.id, event.type);
@@ -34,10 +38,17 @@ async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> 
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id;
-      if (!userId || !(await repo.getProfile(userId))) return "ignored";
-      await repo.setPlan(userId, {
-        plan: "pro",
-        credits: plans().pro.runs,
+      const profile = userId ? await repo.getProfile(userId) : null;
+      if (!userId || !profile) return "ignored";
+      if (session.mode === "payment") {
+        // One-time purchase: only our credit pack, and only once the money is in.
+        if (session.metadata?.product !== "pack" || session.payment_status !== "paid") {
+          return "ignored";
+        }
+        await grantPack(repo, userId);
+        return "processed";
+      }
+      await startPro(repo, userId, profile.credits_remaining, {
         stripe_customer_id: idOf(session.customer),
         stripe_subscription_id: idOf(session.subscription),
       });
@@ -49,11 +60,12 @@ async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> 
       const profile = customer ? await repo.getProfileByStripeCustomer(customer) : null;
       if (!profile) return "ignored"; // first invoice can arrive before checkout completes
       const periodEnd = invoice.lines?.data?.[0]?.period?.end;
-      await repo.setPlan(profile.id, {
-        plan: "pro",
-        credits: plans().pro.runs,
-        current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
-      });
+      await renewPro(
+        repo,
+        profile.id,
+        profile.credits_remaining,
+        periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      );
       return "processed";
     }
     case "customer.subscription.deleted": {
@@ -61,13 +73,7 @@ async function handle(event: Stripe.Event, repo: Repo): Promise<WebhookOutcome> 
       const customer = idOf(sub.customer);
       const profile = customer ? await repo.getProfileByStripeCustomer(customer) : null;
       if (!profile) return "ignored";
-      // Keep stripe_customer_id so they can resubscribe with the same customer.
-      await repo.setPlan(profile.id, {
-        plan: "free",
-        credits: 0,
-        stripe_subscription_id: null,
-        current_period_end: null,
-      });
+      await endPro(repo, profile.id, profile.credits_remaining);
       return "processed";
     }
     default:

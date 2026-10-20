@@ -37,13 +37,15 @@ cp .env.example .env.local        # Windows PowerShell: Copy-Item .env.example .
 pnpm dev
 ```
 
-Open http://localhost:3000 → **Sign in** with any email (demo mode) → **New listing** → **Example: Collapsible silicone cup** (all three channels are ticked; add a photo if you like) → **Generate report**. You should see the pipeline stream (three localization agents run side by side), then keywords, facts, one tab per channel (Amazon US, TikTok Shop US, Shopify) with its publish fields and a score around 80–85, and a shared claim review. Mock mode cannot see photos; it says so in the photo card.
+Open http://localhost:3000 → **Start free** → any email (demo mode, no password) → **New report** → **Example: Collapsible silicone cup** (all three channels are ticked; add a photo if you like) → **Generate report**. You should see the pipeline stream (three localization agents run side by side), then keywords, facts, one tab per channel (Amazon US, TikTok Shop US, Shopify) with its publish fields, a takedown-risk badge, **Show preview** and a score around 80–85, and a shared claim review. Mock mode cannot see photos; the photo card says so, but the measured white background still drives the Amazon verdict.
+
+Then try the rest from the dashboard: **Audit a listing**, **Takedown help**, **Evidence**, **Pricing** → buy a credit pack in the mock checkout, and switch the header's language menu to 简体中文.
 
 Then check that everything is healthy:
 
 ```bash
 pnpm check        # lint + typecheck + unit tests
-pnpm eval         # 13/13 golden cases in mock mode
+pnpm eval         # mock mode: golden 13/13, audit 6/6, appeal 4/4, retrieval
 pnpm check:env    # shows which modes are on
 ```
 
@@ -51,9 +53,9 @@ pnpm check:env    # shows which modes are on
 
 1. https://supabase.com → **New project**. Name `shelfpass`, region close to your users (e.g. _West US_), save the DB password in your password manager.
 2. **Project Settings → API Keys**: copy the **Project URL**, the **publishable** key and the **secret** key (legacy `anon` / `service_role` keys also work in the same slots).
-3. **SQL Editor → New query**: paste `supabase/migrations/20261018000000_init.sql` → **Run**. Every table should appear under **Table Editor**.
-4. **Authentication → Sign In / Providers → Email**: enabled. Turn **Confirm email** off for development and for the class demo (sign-up then logs straight in; Supabase's built-in mailer is heavily rate-limited). Turn it back on if real sellers use the app.
-5. **Authentication → URL Configuration**: Site URL `http://localhost:3000`; add redirect URLs `http://localhost:3000/auth/callback` and, later, `https://<your-vercel-domain>/auth/callback`.
+3. **SQL Editor → New query**: paste `supabase/migrations/20261018000000_init.sql` → **Run**, then the same for `supabase/migrations/20261020000000_compliance_suite.sql` (evidence library, audits/appeals, credit packs). Every table should appear under **Table Editor**.
+4. **Authentication → Sign In / Providers → Email**: enabled. For local development you can leave **Confirm email** off (sign-up logs straight in). To test the 6-digit email code, phone codes and password reset, follow [`docs/AUTH_SETUP.md`](AUTH_SETUP.md): Supabase's built-in mailer only delivers to members of your Supabase team, so set up custom SMTP first.
+5. **Authentication → URL Configuration**: Site URL `http://localhost:3000`; add redirect URLs `http://localhost:3000/**` and, later, `https://<your-vercel-domain>/auth/callback` and `https://<your-vercel-domain>/auth/confirm`.
 6. In `.env.local`:
    ```
    NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
@@ -102,7 +104,7 @@ Production uses a **separate** key that only lives in Vercel.
    STRIPE_WEBHOOK_SECRET=whsec_...
    STRIPE_PRICE_ID_PRO=price_...
    ```
-7. `StripeBilling` is implemented (Checkout for the subscription, Customer Portal). The webhook handles `checkout.session.completed` (upgrade), `invoice.paid` (monthly credit reset) and `customer.subscription.deleted` (downgrade). Test card: `4242 4242 4242 4242`, any future date, any CVC. Until you have Stripe keys, keep `BILLING_MODE=mock`: the rest of the app works the same.
+7. `StripeBilling` is implemented (Checkout for the Pro subscription and the one-time credit pack, Customer Portal). The pack uses inline `price_data`, so there is nothing else to create in Stripe. The webhook handles `checkout.session.completed` (Pro start or pack purchase), `invoice.paid` (monthly top-up to at least 50 credits) and `customer.subscription.deleted` (back to Free, balance kept); the rules are in `src/lib/billing/credits.ts`. Test card: `4242 4242 4242 4242`, any future date, any CVC. Until you have Stripe keys, keep `BILLING_MODE=mock`: the mock checkout sells both products and the rest of the app works the same.
 
 ## §6 Voyage AI — embeddings for vector RAG (WS2, optional)
 
@@ -135,6 +137,9 @@ claude
 | Photo upload fails / 413 on Vercel               | Photos are resized in the browser; if you bypass the form, keep the request under 4.5 MB (≤ 4 photos, ≤ ~650 KB each) |
 | Changed a `NEXT_PUBLIC_*` value, nothing changed | Those are inlined at build time: restart `pnpm dev`, or redeploy on Vercel                                            |
 | Login loops back to /login                       | Supabase redirect URLs (§3.5) and `NEXT_PUBLIC_APP_URL`                                                               |
+| "Email address not authorized" on sign-up        | Supabase's built-in mailer only sends to your Supabase team: set up custom SMTP (`docs/AUTH_SETUP.md` §2)             |
+| Phone tab says text-message codes are off        | No SMS provider configured in Supabase: `docs/AUTH_SETUP.md` §6 (Twilio trial)                                        |
+| Audits, appeals or evidence fail with a DB error | Run `supabase/migrations/20261020000000_compliance_suite.sql` (§3.3)                                                  |
 | Webhook 400 bad signature                        | `STRIPE_WEBHOOK_SECRET` must match the running `stripe listen` session (local) or the dashboard endpoint (prod)       |
 | Data disappeared                                 | `DATA_MODE=memory` resets on restart — expected                                                                       |
 | Playwright can't find a browser                  | `pnpm exec playwright install chromium`                                                                               |

@@ -35,6 +35,7 @@ const EnvSchema = z.object({
 
   FREE_RUNS: z.coerce.number().int().min(0).default(3),
   PRO_RUNS_PER_PERIOD: z.coerce.number().int().min(1).default(50),
+  PACK_CREDITS: z.coerce.number().int().min(1).default(20),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
