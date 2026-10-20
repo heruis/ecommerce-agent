@@ -2,17 +2,18 @@ import {
   ComplianceReport,
   type ClaimAssessment,
   type ListingDraft,
-  type ListingField,
   type Platform,
+  type PolicyRef,
   type PolicyRetriever,
   type ProductFacts,
   type ProductInput,
 } from "@/lib/contracts";
 import { runToolLoop, type AgentContext } from "@/lib/harness";
+import { CLAIM_RULES } from "@/lib/guardrails/claims-lexicon";
 import { asSellerData } from "@/lib/guardrails/input";
 import { platformLabel } from "@/lib/rules";
 import { renderFacts } from "../shared/seller-input";
-import { complianceCandidates, complianceMock } from "./mock";
+import { complianceCandidates, complianceMock, QUERY_FOR_RULE } from "./mock";
 import { COMPLIANCE_SYSTEM } from "./prompt";
 import { lookupEvidenceTool, searchPolicyTool, type RetrievalLog } from "./tools";
 
@@ -65,7 +66,8 @@ export async function runCompliance(
     mock: complianceMock(all, facts, input.evidence),
   });
 
-  return enforceCitations(backstop(result.output, all, facts, input.evidence), log);
+  const report = enforceCitations(backstop(result.output, all, facts, input.evidence), log);
+  return citeRestricted(report, retriever, input.platforms);
 }
 
 export interface ChannelDraft {
@@ -91,8 +93,51 @@ export function enforceCitations(report: ComplianceReport, log: RetrievalLog): C
 }
 
 /**
- * Lexicon backstop: a risky phrase in the draft that the agent missed is
- * added as its own assessment, so nothing restricted slips through.
+ * Every restricted claim carries a policy citation (PRD F-16). A claim the
+ * agent left uncited, or whose made-up citation was dropped, gets one from the
+ * same retriever the agent uses: preferably from its lexicon rule's policy docs.
+ */
+export async function citeRestricted(
+  report: ComplianceReport,
+  retriever: PolicyRetriever,
+  platforms: readonly Platform[],
+): Promise<ComplianceReport> {
+  let added = 0;
+  const claims = await Promise.all(
+    report.claims.map(async (c) => {
+      if (c.status !== "restricted" || c.policy_refs.length > 0) return c;
+      const rule = CLAIM_RULES.find((r) => r.en.test(c.claim_text) || r.zh.test(c.claim_text));
+      const query = rule
+        ? `${QUERY_FOR_RULE[rule.id] ?? rule.claim_type} ${c.claim_text}`
+        : `${c.claim_text} ${c.reason}`;
+      const hits = await retriever.search(query, { k: 8, platforms });
+      const hit = (rule && hits.find((h) => rule.policy_docs.includes(h.doc_id))) ?? hits[0];
+      if (!hit) return c;
+      added++;
+      const ref: PolicyRef = {
+        doc_id: hit.doc_id,
+        chunk_id: hit.chunk_id,
+        title: hit.title,
+        url: hit.url,
+      };
+      return { ...c, policy_refs: [ref] };
+    }),
+  );
+  if (!added) return report;
+  return {
+    ...report,
+    claims,
+    uncertainty: [
+      ...report.uncertainty,
+      `${added} restricted claim(s) were cited automatically from the policy knowledge base.`,
+    ],
+  };
+}
+
+/**
+ * Lexicon backstop: a risky phrase in the draft, or a risky seller claim, that
+ * the agent did not assess is added as its own assessment, so nothing
+ * restricted slips through or goes unreported.
  */
 export function backstop(
   report: ComplianceReport,
@@ -103,14 +148,27 @@ export function backstop(
   const covered = report.claims.map((c) => c.claim_text.toLowerCase());
   const extra: ClaimAssessment[] = [];
   for (const c of complianceCandidates(drafts, facts, evidence)) {
-    if (c.field === "source") continue;
     const t = c.text.toLowerCase();
     if (covered.some((x) => x.includes(t) || t.includes(x))) continue;
+    // A seller claim counts as assessed when any assessment matches its rule,
+    // whatever wording the agent used ("Degradable", "可降解", ...).
+    if (
+      c.field === "source" &&
+      report.claims.some((k) => c.rule.en.test(k.claim_text) || c.rule.zh.test(k.claim_text))
+    ) {
+      continue;
+    }
     if (c.status === "verified") continue;
+    // One verdict per phrase: a seller claim that triggers several rules keeps the strictest.
+    const same = extra.findIndex((x) => x.claim_text.toLowerCase() === t);
+    if (same >= 0) {
+      if (extra[same].status === "restricted" || c.status !== "restricted") continue;
+      extra.splice(same, 1);
+    }
     extra.push({
-      id: `k${report.claims.length + extra.length + 1}`,
+      id: "",
       claim_text: c.text,
-      field: c.field as ListingField,
+      field: c.field,
       status: c.status,
       risk: c.rule.risk,
       reason: `Flagged by the rule-based screen: ${c.rule.guidance}`,
@@ -120,7 +178,9 @@ export function backstop(
       suggested_fix: null,
     });
   }
-  return extra.length ? { ...report, claims: [...report.claims, ...extra] } : report;
+  if (!extra.length) return report;
+  const numbered = extra.map((x, i) => ({ ...x, id: `k${report.claims.length + i + 1}` }));
+  return { ...report, claims: [...report.claims, ...numbered] };
 }
 
 function renderDraft(d: ListingDraft): string {

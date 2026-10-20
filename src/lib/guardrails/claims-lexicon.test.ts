@@ -25,6 +25,20 @@ describe("claims lexicon", () => {
     );
   });
 
+  it("treats every degradability claim as restricted, not only 'biodegradable'", () => {
+    for (const phrase of [
+      "Degradable",
+      "bio-degradable",
+      "oxo-degradable",
+      "Photodegradable",
+      "compostable",
+    ]) {
+      expect(ids(`TPE yoga mat, ${phrase}`)).toContain("biodegradable:restricted");
+    }
+    expect(ids("可降解TPE瑜伽垫")).toContain("biodegradable:restricted");
+    expect(ids("Non-degradable PVC backing")).not.toContain("biodegradable:restricted");
+  });
+
   it("upgrades a claim when the seller has evidence", () => {
     expect(ids("BPA-free lid")).toContain("bpa_free:unverified");
     expect(ids("BPA-free lid", "SGS test report: BPA-free")).toContain("bpa_free:verified");
