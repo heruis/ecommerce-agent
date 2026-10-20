@@ -10,7 +10,8 @@ import type {
 import { scanClaims, type ClaimRule } from "@/lib/guardrails/claims-lexicon";
 import type { LlmRequest, MockResponder } from "@/lib/harness";
 
-const QUERY_FOR_RULE: Record<string, string> = {
+/** A good knowledge-base query per lexicon rule (the mock agent and citeRestricted use it). */
+export const QUERY_FOR_RULE: Record<string, string> = {
   fda_approval: "FDA approved food contact product claim",
   absolute_safety: "100% safe absolute safety claim",
   ranking_number_one: "#1 best seller ranking claim",
@@ -61,10 +62,12 @@ export function complianceCandidates(
       }
     }
   }
+  // Every rule a seller claim triggers ("环保可降解" is both eco_general and biodegradable).
   for (const claim of facts.marketing_claims) {
-    const hit = scanClaims(claim.text_zh, evidence)[0];
-    if (!hit || out.some((c) => c.rule.id === hit.rule.id)) continue;
-    out.push({ rule: hit.rule, field: "source", text: claim.text_en, status: hit.status });
+    for (const hit of scanClaims(`${claim.text_zh}\n${claim.text_en}`, evidence)) {
+      if (out.some((c) => c.rule.id === hit.rule.id)) continue;
+      out.push({ rule: hit.rule, field: "source", text: claim.text_en, status: hit.status });
+    }
   }
   return out;
 }

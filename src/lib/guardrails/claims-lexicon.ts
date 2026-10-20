@@ -132,7 +132,9 @@ export const CLAIM_RULES: ClaimRule[] = [
   {
     id: "biodegradable",
     claim_type: "environmental",
-    en: /\b(?:bio-?degradable|compostable)\b/i,
+    // Any degradability claim (the Green Guides treat "degradable" like "biodegradable"),
+    // but not the negation "non-degradable".
+    en: /(?<!non-)\b(?:(?:bio|oxo|photo)-?)?degradable\b|\bcompostable\b/i,
     zh: /可降解|可生物降解|可堆肥/,
     default_status: "restricted",
     risk: "high",
