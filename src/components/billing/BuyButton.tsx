@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import type { BillingProduct } from "@/lib/contracts";
+import { useT } from "@/lib/i18n/client";
 import { Button, Spinner } from "@/components/ui";
 
 /**
@@ -22,12 +24,14 @@ export function BuyButton({
   variant?: "primary" | "accent" | "secondary";
   className?: string;
 }) {
+  const t = useT();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function go() {
     if (!signedIn) {
-      window.location.href = `/login?mode=signup&next=${encodeURIComponent(`/pricing?buy=${product}`)}`;
+      router.push(`/login?mode=signup&next=${encodeURIComponent(`/pricing?buy=${product}`)}`);
       return;
     }
     setBusy(true);
@@ -38,12 +42,14 @@ export function BuyButton({
       body: JSON.stringify({ product }),
     });
     const body = await res.json().catch(() => null);
-    if (res.ok && body?.url) {
-      window.location.href = body.url;
+    if (res.ok && typeof body?.url === "string") {
+      // Mock checkout is a page of ours; Stripe Checkout is another site.
+      if (body.url.startsWith("/")) router.push(body.url);
+      else window.location.assign(body.url);
       return;
     }
     setBusy(false);
-    setError(body?.error?.message ?? "Checkout is unavailable right now.");
+    setError(body?.error?.message ?? t.billing.errors.unavailable);
   }
 
   return (
