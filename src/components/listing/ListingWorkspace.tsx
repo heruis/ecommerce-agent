@@ -1,12 +1,15 @@
 "use client";
 
+import { Download, FileJson, Printer, RefreshCw, ScrollText, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Listing, PipelineEvent, Platform } from "@/lib/contracts";
+import { fmt } from "@/lib/i18n";
+import { useT } from "@/lib/i18n/client";
 import type { ChannelView } from "@/lib/report";
 import { platformLabel } from "@/lib/rules";
-import { Badge, Button, Card, cn, Spinner } from "@/components/ui";
+import { Alert, Badge, Button, buttonClass, Card, cn, Spinner } from "@/components/ui";
 import { ChannelReport } from "./ChannelReport";
 import { CompliancePanel } from "./CompliancePanel";
 import { KeywordsCard } from "./KeywordsCard";
@@ -29,6 +32,7 @@ export function ListingWorkspace({
   views: ChannelView[];
   autoRun: boolean;
 }) {
+  const t = useT().app.workspace;
   const router = useRouter();
   const [events, setEvents] = useState<PipelineEvent[]>([]);
   const [running, setRunning] = useState(false);
@@ -43,7 +47,7 @@ export function ListingWorkspace({
     if (!res.ok || !res.body) {
       const body = await res.json().catch(() => null);
       setError({
-        message: body?.error?.message ?? "Could not start the run.",
+        message: body?.error?.message ?? t.couldNotStart,
         code: body?.error?.code ?? "error",
       });
       setRunning(false);
@@ -82,83 +86,97 @@ export function ListingWorkspace({
   const [tab, setTab] = useState<Platform>(views[0]?.platform ?? "amazon_us");
   const active = views.find((v) => v.platform === tab) ?? views[0];
   const generated = result?.channels.find((c) => c.platform === active?.platform);
+  const linkButton = buttonClass("secondary", "sm");
 
   return (
     <div className="space-y-6">
       {(running || events.length > 0) && !result ? <RunProgress events={events} /> : null}
 
       {error ? (
-        <Card className="border-danger/40">
-          <p className="text-sm text-danger">{error.message}</p>
+        <Alert tone="danger" title={error.message}>
           {error.code === "out_of_credits" ? (
-            <Link href="/billing" className="mt-2 inline-block text-sm text-brand underline">
-              Upgrade to Pro
+            <Link href="/pricing" className="font-medium text-brand underline">
+              {t.getCredits}
             </Link>
           ) : error.code !== "guardrail_blocked" ? (
-            <p className="mt-1 text-xs text-muted">Your run was refunded.</p>
+            <span>{t.refunded}</span>
           ) : null}
-        </Card>
+        </Alert>
       ) : null}
 
       {!result && !running ? (
         <Card className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-sm text-muted">This report has not been generated yet.</p>
-          <Button onClick={run}>{running ? <Spinner /> : null} Generate report (1 run)</Button>
+          <p className="text-sm text-muted">{t.notGenerated}</p>
+          <Button variant="accent" onClick={run}>
+            <Sparkles aria-hidden className="h-4 w-4" />
+            {t.generate}
+          </Button>
         </Card>
       ) : null}
 
       {result && active && generated ? (
         <>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {views.map((v) => (
               <Badge key={v.platform} tone={v.gate.decision === "pass" ? "ok" : "danger"}>
-                {platformLabel(v.platform)}: {v.gate.decision === "pass" ? "ready" : "needs fixes"}
+                {fmt(v.gate.decision === "pass" ? t.channelReady : t.channelNeedsFixes, {
+                  channel: platformLabel(v.platform),
+                })}
               </Badge>
             ))}
-            <Link
-              href={`/listings/${listing.id}/report`}
-              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background"
-            >
-              Printable report
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href={`/listings/${listing.id}/report`} className={linkButton}>
+              <Printer aria-hidden className="h-4 w-4" />
+              {t.printable}
             </Link>
-            {(["md", "json"] as const).map((f) => (
-              <a
-                key={f}
-                href={`/api/listings/${listing.id}/export?format=${f}`}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-background"
-              >
-                Download {f === "md" ? "report (.md)" : "all fields (.json)"}
-              </a>
-            ))}
+            <a href={`/api/listings/${listing.id}/export?format=md`} className={linkButton}>
+              <Download aria-hidden className="h-4 w-4" />
+              {t.downloadMd}
+            </a>
+            <a href={`/api/listings/${listing.id}/export?format=json`} className={linkButton}>
+              <FileJson aria-hidden className="h-4 w-4" />
+              {t.downloadJson}
+            </a>
             {listing.last_run_id ? (
-              <Link href={`/listings/${listing.id}/trace`} className="text-sm text-brand underline">
-                Agent trace
+              <Link href={`/listings/${listing.id}/trace`} className={buttonClass("ghost", "sm")}>
+                <ScrollText aria-hidden className="h-4 w-4" />
+                {t.trace}
               </Link>
             ) : null}
-            <Button variant="secondary" onClick={run} disabled={running}>
-              {running ? <Spinner /> : null} Regenerate (1 run)
+            <Button variant="ghost" size="sm" onClick={run} disabled={running}>
+              {running ? <Spinner /> : <RefreshCw aria-hidden className="h-4 w-4" />}
+              {t.regenerate}
             </Button>
           </div>
           {running ? <RunProgress events={events} /> : null}
 
           <div className="grid gap-6 lg:grid-cols-2">
             <KeywordsCard keywords={result.keywords} />
-            <Card className="space-y-2 text-sm">
-              <h2 className="font-semibold">What the agents found</h2>
+            <Card className="space-y-3 text-sm">
+              <h2 className="font-semibold">{t.foundTitle}</h2>
               <p className="text-muted">
-                {result.facts.product_type} · {result.facts.facts.length} facts ·{" "}
-                {result.facts.marketing_claims.length} seller claims checked
+                {fmt(t.foundSummary, {
+                  type: result.facts.product_type,
+                  facts: result.facts.facts.length,
+                  claims: result.facts.marketing_claims.length,
+                })}
               </p>
-              <ul className="space-y-0.5 text-xs">
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
                 {result.facts.facts.map((f) => (
-                  <li key={f.id}>
-                    <span className="text-muted">{f.attribute.replace(/_/g, " ")}:</span> {f.value}
-                    {f.unit ? ` ${f.unit}` : ""}
-                  </li>
+                  <div key={f.id} className="contents">
+                    <dt className="text-muted">{f.attribute.replace(/_/g, " ")}</dt>
+                    <dd className="break-words">
+                      {f.value}
+                      {f.unit ? ` ${f.unit}` : ""}
+                    </dd>
+                  </div>
                 ))}
-              </ul>
+              </dl>
               {result.facts.missing_info.length ? (
-                <p className="text-warn">Add to improve: {result.facts.missing_info.join(", ")}</p>
+                <p className="rounded-lg bg-warn/5 px-3 py-2 text-xs text-warn">
+                  {fmt(t.addToImprove, { items: result.facts.missing_info.join(", ") })}
+                </p>
               ) : null}
               {result.warnings.map((w) => (
                 <p key={w} className="text-xs text-muted">
@@ -172,25 +190,36 @@ export function ListingWorkspace({
 
           <div
             role="tablist"
-            aria-label="Marketplace"
-            className="flex flex-wrap gap-2 border-b border-border"
+            aria-label={t.marketplaces}
+            className="sticky top-16 z-10 -mx-4 flex gap-1 overflow-x-auto border-b border-border bg-background/90 px-4 backdrop-blur sm:mx-0 sm:px-0"
           >
-            {views.map((v) => (
-              <button
-                key={v.platform}
-                role="tab"
-                aria-selected={v.platform === active.platform}
-                onClick={() => setTab(v.platform)}
-                className={cn(
-                  "-mb-px border-b-2 px-4 py-2 text-sm font-medium",
-                  v.platform === active.platform
-                    ? "border-brand text-brand"
-                    : "border-transparent text-muted hover:text-foreground",
-                )}
-              >
-                {platformLabel(v.platform)} · {v.score.total}
-              </button>
-            ))}
+            {views.map((v) => {
+              const selected = v.platform === active.platform;
+              return (
+                <button
+                  key={v.platform}
+                  role="tab"
+                  aria-selected={selected}
+                  onClick={() => setTab(v.platform)}
+                  className={cn(
+                    "-mb-px flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-semibold transition-colors duration-200",
+                    selected
+                      ? "border-brand text-brand"
+                      : "border-transparent text-muted hover:text-foreground",
+                  )}
+                >
+                  {platformLabel(v.platform)}
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-xs tabular-nums",
+                      selected ? "bg-brand/10" : "bg-subtle",
+                    )}
+                  >
+                    {v.score.total}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <ChannelReport view={active} images={result.images} listingId={listing.id} />

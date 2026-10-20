@@ -9,6 +9,34 @@ import type {
 } from "@/lib/contracts";
 import { rulesFor } from "@/lib/rules";
 
+/** Share of near-white border pixels that counts as Amazon's pure white background. */
+export const WHITE_BORDER_OK = 0.97;
+const MEASURED_NOTE = "Border measured";
+
+/**
+ * Fold the browser's border-whiteness measurement into one observation. The
+ * measurement beats the model's impression: ≥ 97% near-white → pure white;
+ * below that the background is not pure white (kept "busy" if the model saw a
+ * scene) and a note states the measured percentage. Deterministic, so it also
+ * works in mock mode.
+ */
+export function applyWhiteMeasurement(
+  o: ImageObservation,
+  whiteRatio: number | undefined,
+): ImageObservation {
+  if (whiteRatio === undefined || Number.isNaN(whiteRatio)) return o;
+  if (whiteRatio >= WHITE_BORDER_OK) return { ...o, background: "pure_white" };
+  const pct = Math.round(whiteRatio * 100);
+  return {
+    ...o,
+    background: o.background === "busy" ? "busy" : "light_plain",
+    quality_issues: [
+      ...o.quality_issues.filter((q) => !q.startsWith(MEASURED_NOTE)),
+      `${MEASURED_NOTE} ${pct}% white; Amazon's main image needs a pure white background (about ${Math.round(WHITE_BORDER_OK * 100)}%+ of the border).`,
+    ],
+  };
+}
+
 /**
  * Main-image verdicts are decided in code from the model's observations, so
  * the rules are exact and the same for every run.
@@ -40,8 +68,10 @@ function issuesFor(platform: Platform, o: ImageObservation): string[] {
     issues.push("Not analyzed (mock mode) — check it against the rules yourself.");
   if (o.has_text_or_logo) issues.push("Remove added text, logos or badges from the main image.");
   if (o.has_watermark) issues.push("Remove the watermark.");
+  const measured = o.quality_issues.find((q) => q.startsWith(MEASURED_NOTE));
   if (platform === "amazon_us") {
-    if (o.background === "light_plain" || o.background === "busy") {
+    if (measured) issues.push(measured);
+    else if (o.background === "light_plain" || o.background === "busy") {
       issues.push("Amazon requires a pure white background (RGB 255,255,255).");
     }
     if (o.product_fill === "small") issues.push("Product should fill about 85% of the frame.");
@@ -55,7 +85,10 @@ function issuesFor(platform: Platform, o: ImageObservation): string[] {
     issues.push("A plain background keeps your Shopify catalog consistent.");
   }
   if (o.product_fill === "cropped") issues.push("Part of the product is cut off.");
-  for (const q of o.quality_issues) if (!q.includes("mock")) issues.push(q);
+  for (const q of o.quality_issues) {
+    // Mock notes are not problems; the whiteness note only matters for Amazon (above).
+    if (!q.includes("mock") && !q.startsWith(MEASURED_NOTE)) issues.push(q);
+  }
   return [...new Set(issues)];
 }
 
