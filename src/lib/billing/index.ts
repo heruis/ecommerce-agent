@@ -7,5 +7,6 @@ export function getBilling(): BillingProvider {
   return env().BILLING_MODE === "stripe" ? new StripeBilling() : new MockBilling();
 }
 
-export { plans } from "./plans";
+export { endPro, grantPack, renewPro, startPro } from "./credits";
+export { plans, type PlanKey } from "./plans";
 export { applyStripeEvent, type WebhookOutcome } from "./webhook";

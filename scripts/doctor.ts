@@ -96,9 +96,23 @@ async function main() {
           p_user_id: "00000000-0000-0000-0000-000000000000",
         });
         if (rpc.error) throw new Error(`consume_credit(): ${rpc.error.message}`);
-        return `${count ?? 0} profiles; credit function OK`;
+        const add = await admin.rpc("add_credits", {
+          p_user_id: "00000000-0000-0000-0000-000000000000",
+          p_amount: 0,
+        });
+        if (add.error)
+          throw new Error(
+            `add_credits(): ${add.error.message} (run supabase/migrations/20261020000000_compliance_suite.sql)`,
+          );
+        return `${count ?? 0} profiles; credit functions OK`;
       },
-      "SETUP.md §3: create the project, copy the keys, run supabase/migrations/*.sql in the SQL editor",
+      "SETUP.md §3: create the project, copy the keys, run every supabase/migrations/*.sql file in order in the SQL editor",
+    );
+    // Dashboard-only settings: env vars can't tell us whether they are on.
+    report(
+      "warn",
+      "Sign-in settings",
+      "Email confirmation, email templates, custom SMTP and the SMS provider for phone codes live in the Supabase dashboard and can't be checked from .env. Follow docs/AUTH_SETUP.md.",
     );
   } else {
     report(
@@ -121,7 +135,13 @@ async function main() {
         const price = await new Stripe(e.STRIPE_SECRET_KEY).prices.retrieve(e.STRIPE_PRICE_ID_PRO);
         if (price.recurring?.interval !== "month")
           throw new Error("The Pro price must be a monthly recurring price");
-        return `Pro price ${(price.unit_amount ?? 0) / 100} ${price.currency.toUpperCase()}/month`;
+        // Optional: credit packs use inline price_data unless a one-time price is set.
+        const packId = process.env.STRIPE_PRICE_ID_PACK?.trim();
+        if (packId) {
+          const pack = await new Stripe(e.STRIPE_SECRET_KEY).prices.retrieve(packId);
+          if (pack.recurring) throw new Error("STRIPE_PRICE_ID_PACK must be a one-time price");
+        }
+        return `Pro price ${(price.unit_amount ?? 0) / 100} ${price.currency.toUpperCase()}/month; credit pack ${packId ? "uses STRIPE_PRICE_ID_PACK" : "uses inline price_data"}`;
       },
       "SETUP.md §5: create the product + monthly price in test mode, run `stripe listen` for the webhook secret",
     );

@@ -1,5 +1,111 @@
 /**
- * Strings for the "auth" area. Owner: the workstream that owns those pages.
- * Add keys freely; zh/auth.ts must have the same shape (TypeScript checks it).
+ * Strings for sign-in, sign-up, verification and password reset. Owner: WS4.
+ * zh/auth.ts must have the same shape (TypeScript and i18n.test.ts check it).
  */
-export const auth = {};
+export const auth = {
+  meta: {
+    signin: "Sign in",
+    signup: "Create your account",
+    forgot: "Reset your password",
+    reset: "Choose a new password",
+  },
+  heading: {
+    signin: "Welcome back",
+    signup: "Create your ShelfPass account",
+    phone: "Sign in with your phone",
+  },
+  sub: {
+    signin: "Sign in to see your reports, audits and credits.",
+    signup: "Start with {n} free credits. No card needed.",
+    phone: "We'll text you a 6-digit code. New numbers get a new account.",
+  },
+  tabs: {
+    label: "Sign-in method",
+    signin: "Sign in",
+    signup: "Create account",
+    phone: "Phone",
+  },
+  fields: {
+    email: "Email",
+    password: "Password",
+    passwordHint: "At least 8 characters",
+    newPassword: "New password",
+    confirmPassword: "Confirm new password",
+    code: "6-digit code",
+    phone: "Phone number",
+    country: "Country code",
+    other: "Other",
+    phonePlaceholder: "e.g. 415 555 2671",
+    customCode: "Code, e.g. +65",
+  },
+  actions: {
+    signin: "Sign in",
+    signup: "Create account",
+    sendCode: "Send code",
+    verify: "Verify",
+    resend: "Resend code",
+    resendIn: "Resend in {s}s",
+    forgot: "Forgot password?",
+    backToSignin: "Back to sign in",
+    useDifferentEmail: "Use a different email",
+    useDifferentPhone: "Use a different number",
+    sendReset: "Send reset link",
+    updatePassword: "Update password",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+  },
+  verify: {
+    emailTitle: "Check your email",
+    emailBody: "We sent a 6-digit code to {email}. Enter it below, or click the link in the email.",
+    phoneTitle: "Enter the code",
+    phoneBody: "We texted a 6-digit code to {phone}.",
+    resent: "We sent a new code.",
+    unconfirmed:
+      "Your email isn't confirmed yet. Enter the code we emailed you, or ask for a new one.",
+    spam: "Can't find it? Check your spam folder. Codes expire after an hour.",
+  },
+  reset: {
+    body: "Enter your account email and we'll send you a link to choose a new password.",
+    sent: "If an account exists for {email}, a reset link is on its way. Check your inbox and spam folder.",
+    newBody: "You're signed in from your reset link. Pick a new password.",
+    done: "Password updated. Taking you to your dashboard…",
+    expired: "This reset link has expired or was already used. Ask for a new one below.",
+    mismatch: "The passwords don't match.",
+  },
+  demo: {
+    title: "Sign in to the demo",
+    body: "Demo mode: no password, and data is kept in memory until the server restarts.",
+    continue: "Continue",
+  },
+  linkErrors: {
+    link_invalid: "That link is invalid or has expired. Sign in, or ask for a new code.",
+    otp_expired: "That link has expired. Ask for a new code and try again.",
+    confirmation_failed: "We couldn't confirm that link. Sign in, or ask for a new code.",
+  },
+  errors: {
+    invalidCredentials: "That email and password don't match an account.",
+    emailNotConfirmed: "Please confirm your email first.",
+    invalidCode: "That code is wrong or has expired. Check it, or ask for a new one.",
+    rateLimited: "Too many attempts. Please wait a minute and try again.",
+    smsNotConfigured:
+      "Text-message codes aren't switched on for this site yet. Please use email to sign in for now.",
+    emailNotAuthorized:
+      "We can't send email to this address yet (the site's email service is still in test mode). Try phone sign-in or contact the team.",
+    weakPassword: "Choose a stronger password: at least 8 characters.",
+    userExists: "An account with this email already exists. Sign in instead.",
+    samePassword: "Your new password must be different from the old one.",
+    invalidPhone: "Enter a valid phone number, including the country code.",
+    sessionExpired: "Your session has expired. Please sign in again.",
+    network: "We couldn't reach the server. Check your connection and try again.",
+    generic: "Something went wrong. Please try again.",
+    invalidEmail: "Enter a valid email address.",
+    passwordTooShort: "Use at least 8 characters.",
+    codeFormat: "Enter the 6-digit code.",
+  },
+  legal: {
+    prefix: "By creating an account you agree to the",
+    terms: "Terms of Service",
+    and: "and",
+    privacy: "Privacy Policy",
+  },
+};

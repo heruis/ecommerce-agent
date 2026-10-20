@@ -1,5 +1,70 @@
 /**
- * Strings for the "account" area. Owner: the workstream that owns those pages.
- * Add keys freely; zh/account.ts must have the same shape (TypeScript checks it).
+ * Strings for the account page. Owner: WS4.
+ * zh/account.ts must have the same shape (TypeScript and i18n.test.ts check it).
  */
-export const account = {};
+export const account = {
+  meta: { title: "Account" },
+  title: "Account",
+  subtitle: "Your sign-in details, plan and data.",
+  signin: {
+    title: "Sign-in details",
+    email: "Email",
+    noEmail: "No email on this account (phone sign-in)",
+    verified: "Verified",
+    unverified: "Not verified",
+    demo: "Demo account: verification is skipped in demo mode.",
+    phone: "Phone",
+    noPhone: "No phone number yet",
+    addPhone: "Add phone",
+    changePhone: "Change phone",
+    phoneHelp: "Add a phone number to sign in with a text-message code.",
+    phoneDemo: "Phone verification needs the live site (Supabase sign-in).",
+    sendCode: "Send code",
+    codeSent: "We texted a 6-digit code to {phone}.",
+    code: "6-digit code",
+    verify: "Verify",
+    phoneVerified: "Phone number verified.",
+    pending: "Waiting for the code sent to {phone}.",
+    cancel: "Cancel",
+  },
+  plan: {
+    title: "Plan and credits",
+    plan: "Plan",
+    free: "Free",
+    pro: "Pro",
+    credits: "Credits left",
+    renews: "Renews on {date}",
+    billing: "Billing",
+    buy: "Buy credits",
+  },
+  password: {
+    title: "Password",
+    body: "Change the password you use to sign in.",
+    new: "New password",
+    confirm: "Confirm new password",
+    submit: "Change password",
+    done: "Password changed.",
+    mismatch: "The passwords don't match.",
+    tooShort: "Use at least 8 characters.",
+  },
+  language: {
+    title: "Language",
+    body: "Used for the interface and for AI explanations of your reports.",
+  },
+  data: {
+    title: "Your data",
+    body: "Download everything ShelfPass stores about you as one JSON file: profile, reports, audits, appeals and evidence entries.",
+    download: "Download my data",
+  },
+  danger: {
+    title: "Delete account",
+    body: "Permanently deletes your account, reports, audits, appeals and evidence. An active Pro subscription is cancelled first. This can't be undone.",
+    confirmLabel: "Type {word} to confirm",
+    word: "DELETE",
+    submit: "Delete my account",
+    deleting: "Deleting…",
+    failed: "We couldn't delete your account. Nothing was removed. Please try again.",
+    subscriptionFailed:
+      "We couldn't cancel your subscription, so nothing was deleted. Please try again in a minute.",
+  },
+};
