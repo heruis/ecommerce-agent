@@ -2,6 +2,29 @@
 
 **Platform: Vercel** (course default for Next.js + Claude Code). Move to Fly.io/Railway only if runs outgrow Vercel's function limits (see D-006).
 
+## Current production setup (2026-10-19)
+
+**Live URL: https://shelfpass.vercel.app** · `/api/health` → `ai: live, data: supabase, billing: stripe, rag: lexical`.
+
+| Piece    | Setup                                                                                                                                                                                                |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Vercel   | Project `shelfpass` (Hobby). **Deployed with the Vercel CLI**, not the Git integration: the repo lives under a personal GitHub account, so another member's Vercel account cannot import it (D-015). |
+| Models   | `ANTHROPIC_MODEL_SMART=claude-sonnet-5-5`, `ANTHROPIC_MODEL_FAST=claude-haiku-5-5`; prices $2/$10 and $0.10/$0.50 per MTok (D-015)                                                                   |
+| Supabase | Migration applied; email confirmation off for the demo; Authentication → URL Configuration: Site URL `https://shelfpass.vercel.app`, redirect `https://shelfpass.vercel.app/auth/callback`           |
+| Stripe   | Sandbox; product _ShelfPass Pro_ $9.99/month; customer portal on (cancel immediately); webhook `https://shelfpass.vercel.app/api/stripe/webhook` with the 3 events                                   |
+| Secrets  | Only in Vercel (Production; the two private keys stored as _Sensitive_) and each developer's `.env.local`                                                                                            |
+
+**Redeploy after merging to `main`** (from a clean checkout that has no `.env.local`, so no secrets are uploaded; the deploy owner must be logged in with `vercel login`):
+
+```bash
+git fetch origin && git checkout --detach origin/main
+npx vercel deploy --prod
+```
+
+Rollback: Vercel → Deployments → pick the previous one → **Promote to Production**. To switch to automatic deploys on every push, the repo owner connects Git in Vercel (Project → Settings → Git) or imports the repo into their own Vercel account.
+
+**Supabase URL gotcha:** `NEXT_PUBLIC_SUPABASE_URL` is the bare project URL (`https://<ref>.supabase.co`). The Data API page shows it with `/rest/v1/`; with that suffix table reads still seem to work but RPC calls fail with "Invalid path specified in request URL".
+
 ## From repo to live URL (5 steps)
 
 1. **Push to GitHub** — `main` is always deployable (CI must be green).
