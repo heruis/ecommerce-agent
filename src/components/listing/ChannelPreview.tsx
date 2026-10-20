@@ -31,7 +31,9 @@ export function ChannelPreview({
   const p = t.app.preview;
   const [open, setOpen] = useState(false);
   const [price, setPrice] = useState("$19.99");
-  const images = photos.map((i) => `data:${i.media_type};base64,${i.data}`);
+  const images = photos.length
+    ? photos.map((i) => `data:${i.media_type};base64,${i.data}`)
+    : ["/demo/no-photo.svg"];
   const handle = fields.find((f) => f.key === "url_handle")?.value || undefined;
   const common = {
     listing,

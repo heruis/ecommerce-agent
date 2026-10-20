@@ -25,7 +25,7 @@ const FONT = { fontFamily: "Arial, Helvetica, sans-serif" };
  */
 export function AmazonPreview({
   listing,
-  brand = "Your brand",
+  brand,
   price = "$0.00",
   images = [],
   categories = ["Sports & Outdoors", "Outdoor Recreation", "Camping & Hiking", "Camp Kitchen"],
@@ -101,7 +101,7 @@ export function AmazonPreview({
               <h3 className="text-[17px] font-normal leading-tight @3xl:text-[19px]">
                 {listing.title}
               </h3>
-              <p className="text-[12px] text-sky-700">Visit the {brand} Store</p>
+              {brand ? <p className="text-[12px] text-sky-700">Visit the {brand} Store</p> : null}
               <div className="flex items-center gap-2 text-[12px]">
                 <span className="rounded-sm bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-white">
                   New
@@ -149,9 +149,9 @@ export function AmazonPreview({
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 pt-1 text-[11px] text-slate-600">
                 <dt>Ships from</dt>
-                <dd className="truncate">{brand}</dd>
+                <dd className="truncate">{brand ?? "—"}</dd>
                 <dt>Sold by</dt>
-                <dd className="truncate text-sky-700">{brand}</dd>
+                <dd className="truncate text-sky-700">{brand ?? "—"}</dd>
               </dl>
             </div>
           </div>
