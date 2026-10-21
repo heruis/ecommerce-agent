@@ -30,9 +30,9 @@ Speakers follow the workstreams: **Speaker 1** lead · **Speaker 2** WS3 product
 
 **Speaker 2 · WS3 Product UI (1:15–3:00)**
 
-- _Slide 4._ Here's what the seller gets. One run gives a tab per marketplace, and each tab is that site's own "add product" form, in order, with a copy button on every field. Note the 75-character title with Item Highlights under it. Every claim is checked with a cited source, and each channel gets a quality and a takedown-risk score. Let me show you.
+- _Slide 4._ Here's what the seller gets. One run gives a tab per marketplace, and each tab is that site's own "add product" form, in order, with a copy button on every field. Note the title within Amazon's 75 characters, with Item Highlights under it. Every claim is checked with a cited source, and each channel gets a quality and a takedown-risk score. Let me show you.
 - _Slide 5, live demo (switch to the browser; fall back to the slide's screenshots if the network fails)._
-  1. "Every account is verified with an email code; I'm signed in with three free credits." _(Sign up beforehand to save time.)_
+  1. "Every new account starts with three free credits; I'm already signed in." _(Sign up beforehand to save time. If the live sign-up sends an email code, say so.)_
   2. Paste the thin input: title `杯子`, description `质量很好，很好用，欢迎购买。` → Generate. "ShelfPass stops before writing and asks three questions, in English and Chinese. No credit used: we won't invent a listing."
   3. New report → _Example: Collapsible silicone cup_ → Generate. While it streams: "extraction, keywords, three localization agents in parallel, then compliance."
   4. Amazon tab: "the title fits 75 characters, the extra details moved into Item Highlights" → **Show preview**.
@@ -51,7 +51,7 @@ Speakers follow the workstreams: **Speaker 1** lead · **Speaker 2** WS3 product
 
 **Speaker 5 · WS4 Platform (5:30–6:30)**
 
-- _Slide 10._ Everything you saw is live at shelfpass.vercel.app: one Next.js app on Vercel. Claude does the model work, Sonnet writes and Haiku reads and judges. Supabase holds accounts and data with row-level security, and every query also filters by the signed-in user. Stripe runs checkout in test mode, and credits change only through atomic SQL or the signed webhook. It's production-ready: email-code sign-up, password reset, secrets only in Vercel, refunds on our failures, data export and account deletion. The business: three free credits, a $4.99 pack, or Pro at $9.99 a month. A report costs us 8 to 9 cents, so even a heavy Pro user leaves a margin. → _Speaker 1_
+- _Slide 10._ Everything you saw is live at shelfpass.vercel.app: one Next.js app on Vercel. Claude does the model work, Sonnet writes and Haiku reads and judges. Supabase holds accounts and data with row-level security, and every query also filters by the signed-in user. Stripe runs checkout in test mode, and credits change only through atomic SQL or the signed webhook. It's production-ready: sign-up and login with password reset, secrets only in Vercel, refunds on our failures, data export and account deletion. The business: three free credits, a $4.99 pack, or Pro at $9.99 a month. A report costs us 8 to 9 cents, so even a heavy Pro user leaves a margin. → _Speaker 1_
 
 **Speaker 1 · Lead (6:30–7:00)**
 
@@ -59,7 +59,7 @@ Speakers follow the workstreams: **Speaker 1** lead · **Speaker 2** WS3 product
 
 ## Before the presentation
 
-- [ ] Live smoke test today (`docs/AUTH_SETUP.md` §8): sign up with the email code, one report, one audit, a credit pack with the test card
+- [ ] Live smoke test today (`docs/AUTH_SETUP.md` §8): sign up (enter the email code if one is sent), one report, one audit, a credit pack with the test card
 - [ ] Live eval run with the deployed models (golden, audit, appeal); update slide 9 if the numbers change
 - [ ] Demo account signed in with at least 2 credits; Stripe in test mode; thin input and the cup example ready to paste
 - [ ] Browser zoom 125%, notifications off, the deck open in a second window
