@@ -206,6 +206,13 @@ export const app: Dictionary["app"] = {
     foundSummary: "{type} · {facts} 条事实 · 已检查 {claims} 条卖家宣称",
     addToImprove: "补充以下信息可提升质量：{items}",
     marketplaces: "平台",
+    needsInfoTitle: "请先补充几项信息",
+    needsInfoNote:
+      "现有商品信息太少，无法在不猜测的情况下撰写链接，所以我们在撰写前停了下来。本次未消耗次数。",
+    answersLabel: "你的回答",
+    answersPlaceholder: "例如：食品级硅胶，容量350ml，折叠后3cm，适合露营和旅行",
+    generateWithAnswers: "补充后生成（消耗 1 次）",
+    answersPrefix: "补充信息",
   },
   preview: {
     title: {

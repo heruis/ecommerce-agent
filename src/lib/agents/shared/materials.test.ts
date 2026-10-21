@@ -43,6 +43,7 @@ describe("material glossary", () => {
       ],
       marketing_claims: [],
       missing_info: [],
+      questions: [],
     };
     const out = normalizeMaterials(facts).facts;
     expect(out[0].value).toBe("polypropylene (PP)");

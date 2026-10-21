@@ -2,7 +2,14 @@
  * CONTRACTS — persisted records, traces and streaming events.
  */
 import { z } from "zod";
-import { ListingDraft, Platform, PipelineResult, ProductInput, Stage } from "./schemas";
+import {
+  ListingDraft,
+  Platform,
+  PipelineResult,
+  ProductInput,
+  Stage,
+  type ClarifyingQuestion,
+} from "./schemas";
 
 // ---------------------------------------------------------------------------
 // Observability: one run = a tree of spans (stage -> llm call / tool call)
@@ -112,4 +119,11 @@ export type PipelineEvent =
       result: z.infer<typeof PipelineResult>;
       usage: RunUsage;
     }
-  | { type: "run_failed"; run_id: string; error: string; code: string };
+  | {
+      type: "run_failed";
+      run_id: string;
+      error: string;
+      code: string;
+      /** With code "needs_info": what the seller should add before running again. */
+      questions?: ClarifyingQuestion[];
+    };

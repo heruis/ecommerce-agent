@@ -144,5 +144,13 @@ export function mockExtraction(input: ProductInput): ProductFacts {
   if (!/包含|包装|套装|配件|清单/.test(text)) missing_info.push("package contents");
   if (!/清洗|清洁|洗碗机|保养/.test(text)) missing_info.push("care instructions");
 
-  return { product_type, category: input.category, facts, marketing_claims, missing_info };
+  // Questions for thin input come from code defaults (see sufficiency.ts).
+  return {
+    product_type,
+    category: input.category,
+    facts,
+    marketing_claims,
+    missing_info,
+    questions: [],
+  };
 }

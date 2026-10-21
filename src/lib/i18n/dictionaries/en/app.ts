@@ -213,6 +213,13 @@ export const app = {
     foundSummary: "{type} · {facts} facts · {claims} seller claims checked",
     addToImprove: "Add to improve: {items}",
     marketplaces: "Marketplace",
+    needsInfoTitle: "A few more details first",
+    needsInfoNote:
+      "Your product information is too thin to write a listing without guessing, so we stopped before writing. No credit was used.",
+    answersLabel: "Your answers",
+    answersPlaceholder: "例如：食品级硅胶，容量350ml，折叠后3cm，适合露营和旅行",
+    generateWithAnswers: "Generate with these details (1 credit)",
+    answersPrefix: "补充信息",
   },
   preview: {
     title: {

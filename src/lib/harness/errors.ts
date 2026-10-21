@@ -4,6 +4,7 @@
  */
 export type AgentErrorCode =
   | "guardrail_blocked" // input rejected by a guardrail (user error, no refund)
+  | "needs_info" // input too thin to write from: ask the seller (credit refunded)
   | "budget_exceeded" // run hit its token / call / time budget
   | "schema_invalid" // model output failed the contract after repair attempts
   | "refusal" // model declined (stop_reason = refusal)

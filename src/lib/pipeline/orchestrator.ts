@@ -1,6 +1,7 @@
 import {
   ProductInput,
   type ChannelResult,
+  type ClarifyingQuestion,
   type ImageAnalysis,
   type ListingDraft,
   type Platform,
@@ -13,6 +14,7 @@ import {
   type Stage,
 } from "@/lib/contracts";
 import {
+  clarifyingQuestions,
   runCompliance,
   runExtraction,
   runImageCheck,
@@ -152,6 +154,16 @@ export async function runPipeline(
     warnings.push(...extraction.warnings);
     const facts = extraction.facts;
 
+    // Too thin to write from: ask the seller instead of inventing details.
+    const questions = clarifyingQuestions(facts);
+    if (questions.length > 0) {
+      throw new AgentError(
+        "needs_info",
+        "We need a few more details before we can write this listing. No credit was used.",
+        { questions },
+      );
+    }
+
     // Photos (optional) and keywords only need the facts: run them together.
     const imagesPromise: Promise<ImageAnalysis | null> =
       input.images.length > 0
@@ -212,6 +224,13 @@ export async function runPipeline(
             platform: d.platform,
             brand: input.brand,
             evidence: input.evidence,
+            source: [
+              input.title_zh,
+              input.description_zh,
+              input.specs_zh,
+              input.evidence,
+              input.existing_listing_en,
+            ].join("\n"),
           }),
         })),
       (r) =>
@@ -303,7 +322,17 @@ export async function runPipeline(
       tracer,
       err.message,
     );
-    emit({ type: "run_failed", run_id: runId, error: err.message, code: err.code });
+    const questions =
+      err.code === "needs_info"
+        ? (err.details as { questions?: ClarifyingQuestion[] } | undefined)?.questions
+        : undefined;
+    emit({
+      type: "run_failed",
+      run_id: runId,
+      error: err.message,
+      code: err.code,
+      ...(questions ? { questions } : {}),
+    });
     return { result: null, run, error: err };
   }
 }

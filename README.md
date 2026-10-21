@@ -4,11 +4,11 @@
 
 ShelfPass is an agentic AI SaaS for cross-border sellers. A seller pastes Chinese supplier copy, like _"食品级硅胶折叠水杯，FDA认证，100%安全，美国销量第一"_ ("food-grade silicone collapsible cup, FDA certified, 100% safe, #1 seller in the US"), picks the channels they sell on and (optionally) adds up to 4 product photos. A pipeline of specialist agents then:
 
-- extracts the facts
+- extracts the facts, and asks 1–4 questions instead of guessing when there is too little to write from (no credit used)
 - suggests one set of US keywords (primary, secondary, TikTok hashtags), using real phrases from Amazon's search box when they fit
 - checks the photos against each site's main-image rules (the browser measures the white background; code decides) and writes a shot list
-- writes one listing per channel, in parallel, each checked against that site's rules
-- verifies every marketing claim once, across all channels, against the seller's evidence and a cited policy knowledge base
+- writes one listing per channel, in parallel, each checked against that site's rules (Amazon: 75-character titles plus the 125-character Item Highlights line, in force since July 27, 2026)
+- verifies every marketing claim once, across all channels, against the seller's evidence and a cited policy knowledge base, and flags any number the seller never gave (an invented spec)
 - maps each listing onto the site's own "add product" form, field by field, ready to copy
 - scores each channel 0–100 for quality and gives it a 0–100 takedown-risk score
 
@@ -24,7 +24,7 @@ The output is a report, not a live publish: every field of each form with a copy
 
 UCLA _440 Building LLM Applications_ capstone.
 
-> **Live demo:** **https://shelfpass.vercel.app** (Stripe in test mode: card `4242 4242 4242 4242`). The live site runs the previous version until the site-v2 branch is deployed (see [Deployment](docs/DEPLOYMENT.md#shipping-site-v2)). · **Docs:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Agent design](docs/AGENT_DESIGN.md) · [Guardrails](docs/GUARDRAILS.md) · [Evals](docs/EVALS.md) · [Setup](docs/SETUP.md) · [Auth setup](docs/AUTH_SETUP.md) · [Team guide](docs/team/TEAM_GUIDE.md)
+> **Live demo:** **https://shelfpass.vercel.app** (Stripe in test mode: card `4242 4242 4242 4242`). · **Docs:** [PRD](docs/PRD.md) · [Architecture](docs/ARCHITECTURE.md) · [Agent design](docs/AGENT_DESIGN.md) · [Guardrails](docs/GUARDRAILS.md) · [Evals](docs/EVALS.md) · [Setup](docs/SETUP.md) · [Auth setup](docs/AUTH_SETUP.md) · [Team guide](docs/team/TEAM_GUIDE.md)
 
 ![How it works: supplier note → ShelfPass → Amazon-style page, TikTok Shop-style phone page and Google result for a Shopify store](docs/images/how-it-works.png)
 
@@ -83,8 +83,8 @@ The audit and appeal tools reuse the same harness, agents and guardrails (see [A
   - Claude API through the Anthropic TypeScript SDK, with a fast tier and a smart tier
   - Design system generated with the ui-ux-pro-max skill (`design-system/shelfpass/MASTER.md`, D-017)
 - **Harness:** structured outputs plus zod contracts, a ReAct tool loop driven by `stop_reason`, per-run budgets (calls, tokens, cost, time), tracing of every model and tool call, and PII redaction.
-- **Trust:** three guardrail layers (input incl. a photo file check, actions, output gate per channel) and eval suites: 13 golden report cases scored on outcome, process, output contract and efficiency for every channel; 6 audit cases; 4 appeal cases; retrieval metrics (Recall@k, MRR, NDCG). `pnpm eval` fails below an 80% pass rate.
-- **Live results** for the core report (smart and fast tiers as configured in D-015): 13/13 golden cases in two consecutive live runs (first live baseline: 10/13), about $0.08–0.09 and 31–34 s per three-channel case; retrieval recall@3 0.93. The audit and appeal suites have been run in mock mode only so far (6/6, 4/4).
+- **Trust:** three guardrail layers (input incl. a photo file check, actions, output gate per channel) and eval suites: 14 golden report cases scored on outcome, process, output contract and efficiency for every channel; 6 audit cases; 4 appeal cases; retrieval metrics (Recall@k, MRR, NDCG). `pnpm eval` fails below an 80% pass rate.
+- **Live results** for the core report (smart and fast tiers as configured in D-015): 13/13 golden cases in two consecutive live runs on 2026-10-19 (first live baseline: 10/13), about $0.08–0.09 and 31–34 s per three-channel case; retrieval recall@3 0.93. Those runs predate the 75-character titles, the questions for thin input and number grounding (D-020–D-022), which pass every suite in mock mode (golden 14/14, audit 6/6, appeal 4/4); the live suites are re-run with the Anthropic key before the demo.
 
 ![Agent trace: every stage, model call and tool call with tokens and cost](docs/images/trace.png)
 

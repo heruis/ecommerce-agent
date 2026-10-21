@@ -76,6 +76,24 @@ describe("applyGate (layer 3 output gate)", () => {
   it("re-validates after fixing", () => {
     expect(r.validation.violations.filter((v) => v.severity === "error")).toHaveLength(0);
   });
+
+  it("flags numbers the seller never gave for review, without failing the gate", () => {
+    const withSpec = applyGate({
+      draft: {
+        ...draft,
+        bullets: [...draft.bullets.slice(0, 4), "Keeps drinks cold 1200 minutes."],
+      },
+      compliance: report,
+      platform: "amazon_us",
+      brand: "",
+      evidence: "",
+      source: "硅胶折叠水杯，容量350ml，折叠后3cm",
+    });
+    expect(withSpec.gate.needs_review.join(" ")).toMatch(/Check 1200: not in your product/);
+    expect(withSpec.gate.decision).toBe("pass");
+    // Without the seller's text there is nothing to compare against.
+    expect(r.gate.needs_review.join(" ")).not.toMatch(/not in your product information/);
+  });
 });
 
 describe("applyGate on Shopify fields", () => {

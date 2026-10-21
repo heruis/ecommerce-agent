@@ -107,4 +107,22 @@ describe("runPipeline (mock mode)", () => {
     const out = await runPipeline({ title_zh: "", description_zh: "short" });
     expect(out.error?.code).toBe("guardrail_blocked");
   });
+
+  it("asks the seller for details instead of writing from thin input, and refunds", async () => {
+    const events: PipelineEvent[] = [];
+    const out = await runPipeline(
+      { title_zh: "杯子", description_zh: "质量很好，很好用，欢迎购买。" },
+      { emit: (e) => events.push(e) },
+    );
+    expect(out.result).toBeNull();
+    expect(out.error?.code).toBe("needs_info");
+    expect(out.error?.refundable).toBe(true);
+    // Only the extraction call ran; nothing was written.
+    expect(out.run.usage.llm_calls).toBe(1);
+    const failed = events.find((e) => e.type === "run_failed");
+    expect(failed).toMatchObject({ code: "needs_info" });
+    const questions = failed?.type === "run_failed" ? (failed.questions ?? []) : [];
+    expect(questions.length).toBeGreaterThan(0);
+    expect(questions.every((q) => q.en && q.zh)).toBe(true);
+  });
 });

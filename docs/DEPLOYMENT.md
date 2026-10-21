@@ -27,7 +27,7 @@ Rollback: Vercel → Deployments → pick the previous one → **Promote to Prod
 
 ## Shipping site v2
 
-Branch `feat/site-v2` adds the compliance suite (audit, appeal, evidence library, risk score, explanations in Chinese), the new site and pricing page, the bilingual UI, email/phone verification, the account page and credit packs. The live URL keeps running the previous version until these steps are done, in this order:
+Branch `feat/site-v2` adds the compliance suite (audit, appeal, evidence library, risk score, explanations in Chinese), the new site and pricing page, the bilingual UI, email/phone verification, the account page and credit packs. Site v2 has been in production since 2026-10-20 01:56 PT (CLI deploy eight minutes after the merge). Steps 1–2 are dashboard steps that the repo cannot show, so step 6's smoke test is the check that they were done. For a fresh environment, follow them in this order:
 
 1. **Database:** Supabase → SQL Editor → run `supabase/migrations/20261020000000_compliance_suite.sql` (evidence library, `tool_runs` for audits and appeals, `add_credits()` for packs). Safe to run twice. Without it, audits, appeals, evidence and credit packs fail.
 2. **Auth dashboard:** follow [`docs/AUTH_SETUP.md`](AUTH_SETUP.md) §2–§6 — custom SMTP **before** turning on _Confirm email_ (Supabase's built-in mailer only delivers to members of your Supabase team), email templates with the 6-digit `{{ .Token }}` and `/auth/confirm` links, URL configuration with `/auth/callback` **and** `/auth/confirm`, and (optional) Twilio for phone codes.

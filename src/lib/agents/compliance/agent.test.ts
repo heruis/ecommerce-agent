@@ -23,6 +23,7 @@ const facts: ProductFacts = {
     },
   ],
   missing_info: [],
+  questions: [],
 };
 
 const draft: ListingDraft = {
