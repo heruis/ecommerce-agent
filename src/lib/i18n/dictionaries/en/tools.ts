@@ -74,6 +74,7 @@ export const tools = {
   },
   fields: {
     title: "Title",
+    item_highlights: "Item highlights",
     bullet: "Bullet {n}",
     bullets: "Bullets",
     description: "Description",

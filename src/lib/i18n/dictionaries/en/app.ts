@@ -252,6 +252,7 @@ export const app = {
     title: "Edit {channel} copy",
     note: "Saving re-checks the rules and risky claims.",
     titleField: "Title",
+    itemHighlights: "Item highlights",
     description: "Description",
     searchTerms: "Backend search terms",
     searchTermsHint: "{bytes}/{max} bytes · AI-suggested",

@@ -148,6 +148,34 @@ export function validateListing(
     );
   }
 
+  // ---- Amazon Item Highlights --------------------------------------------
+  if (rules.itemHighlights) {
+    const h = draft.item_highlights.trim();
+    if (!h) {
+      add(
+        "item_highlights.missing",
+        "item_highlights",
+        "warning",
+        `Add Item Highlights: up to ${rules.itemHighlights.maxChars} searchable characters shown under the title.`,
+      );
+    } else if (h.length > rules.itemHighlights.maxChars) {
+      add(
+        "item_highlights.max_chars",
+        "item_highlights",
+        "error",
+        `Item Highlights is ${h.length} characters; ${rules.label} allows ${rules.itemHighlights.maxChars}. Rewrite it shorter.`,
+      );
+    }
+    if (h && title && repeatsTitle(h, title)) {
+      add(
+        "item_highlights.repeats_title",
+        "item_highlights",
+        "warning",
+        "Item Highlights mostly repeats the title. Use it for details the title leaves out (material, size, use cases, what's included).",
+      );
+    }
+  }
+
   // ---- bullets / selling points / highlights -----------------------------
   const b = rules.bullets;
   if (draft.bullets.length < b.min) {
@@ -299,6 +327,7 @@ export function validateListing(
   // ---- every text field --------------------------------------------------
   const fields: [ListingField, string, number | null][] = [
     ["title", draft.title, null],
+    ["item_highlights", draft.item_highlights, null],
     ...draft.bullets.map((x, i): [ListingField, string, number] => ["bullets", x, i]),
     ["description", draft.description, null],
     ["search_terms", draft.search_terms, null],
@@ -341,4 +370,20 @@ export function validateListing(
 
 function escapeRe(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function contentWords(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/[\s,/|;:()]+/)
+    .map((w) => w.replace(/[^a-z0-9-]/g, ""))
+    .filter((w) => w.length > 1 && !STOPWORDS.has(w));
+}
+
+/** True when most of the highlight's words are already in the title. */
+export function repeatsTitle(highlights: string, title: string): boolean {
+  const words = contentWords(highlights);
+  if (words.length === 0) return false;
+  const inTitle = new Set(contentWords(title));
+  return words.filter((w) => inTitle.has(w)).length / words.length >= 0.6;
 }

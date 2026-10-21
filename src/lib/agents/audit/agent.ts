@@ -44,6 +44,7 @@ export async function runStructureListing(
   return {
     draft: {
       title: keep(draft.title, parsed.title, "title"),
+      item_highlights: keep(draft.item_highlights, parsed.item_highlights, "Item Highlights"),
       bullets: draft.bullets.every((b) => appearsIn(text, b)) ? draft.bullets : parsed.bullets,
       description: keep(draft.description, parsed.description, "description"),
       search_terms: keep(draft.search_terms, parsed.search_terms, "search terms"),

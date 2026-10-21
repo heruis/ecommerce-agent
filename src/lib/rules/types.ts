@@ -5,6 +5,7 @@ export type FieldSource =
   | {
       from:
         | "title"
+        | "item_highlights"
         | "bullets"
         | "description"
         | "search_terms"
@@ -46,6 +47,8 @@ export interface PlatformRules {
     /** A non-stopword may appear at most this many times. */
     maxWordRepeats: number;
   };
+  /** Amazon Item Highlights: one searchable line under the title; null elsewhere. */
+  itemHighlights: { maxChars: number } | null;
   bullets: {
     label: string;
     min: number;

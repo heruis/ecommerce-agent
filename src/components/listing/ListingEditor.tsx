@@ -100,6 +100,22 @@ export function ListingEditor({
         />
         {notes("title")}
       </div>
+      {rules.itemHighlights ? (
+        <div>
+          <Label
+            htmlFor={`${platform}-item_highlights`}
+            hint={<Counter n={draft.item_highlights.length} max={rules.itemHighlights.maxChars} />}
+          >
+            {t.itemHighlights}
+          </Label>
+          <Input
+            id={`${platform}-item_highlights`}
+            value={draft.item_highlights}
+            onChange={(e) => update({ item_highlights: e.target.value })}
+          />
+          {notes("item_highlights")}
+        </div>
+      ) : null}
       {draft.bullets.map((b, i) => (
         <div key={i}>
           <Label
@@ -248,7 +264,11 @@ export function ListingEditor({
           {saving ? <Spinner /> : null}
           {t.save}
         </Button>
-        <Button variant="ghost" onClick={() => update(generated)}>
+        <Button
+          variant="ghost"
+          // Reports saved before Item Highlights existed have no such field.
+          onClick={() => update({ ...generated, item_highlights: generated.item_highlights ?? "" })}
+        >
           {t.reset}
         </Button>
         {saved ? <Badge tone="ok">{t.saved}</Badge> : null}

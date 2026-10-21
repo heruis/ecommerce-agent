@@ -12,6 +12,7 @@ export function listingAsText(
   t: Dictionary["tools"],
   l: {
     title: string;
+    item_highlights?: string;
     bullets: string[];
     description: string;
     search_terms: string;
@@ -21,6 +22,7 @@ export function listingAsText(
   },
 ): string {
   const parts: string[] = [`${t.fields.title}\n${l.title}`];
+  if (l.item_highlights) parts.push(`${t.fields.item_highlights}\n${l.item_highlights}`);
   l.bullets.forEach((b, i) => parts.push(`${fmt(t.fields.bullet, { n: i + 1 })}\n${b}`));
   parts.push(`${t.fields.description}\n${l.description}`);
   if (l.search_terms) parts.push(`${t.fields.search_terms}\n${l.search_terms}`);

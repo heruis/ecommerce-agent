@@ -255,6 +255,7 @@ export function problemFields(
     else if (scanClaims(text, evidence).some((h) => h.status !== "verified")) keys.add(key);
   };
   mark("title", listing.title);
+  mark("item_highlights", listing.item_highlights);
   listing.bullets.forEach((b, i) => mark(`bullets:${i}`, b));
   mark("description", listing.description);
   mark("search_terms", listing.search_terms);
@@ -274,7 +275,13 @@ export function keepUntouched(
 ): ListingDraft {
   const problems = problemFields(original, compliance, validation, evidence);
   const pick = <
-    K extends "title" | "description" | "search_terms" | "seo_title" | "seo_description",
+    K extends
+      | "title"
+      | "item_highlights"
+      | "description"
+      | "search_terms"
+      | "seo_title"
+      | "seo_description",
   >(
     key: K,
   ) => (problems.has(key) ? proposed[key] : original[key]);
@@ -287,6 +294,7 @@ export function keepUntouched(
     problems.has("tags:*") || original.tags.some((_, i) => problems.has(`tags:${i}`));
   return {
     title: pick("title"),
+    item_highlights: pick("item_highlights"),
     bullets,
     description: pick("description"),
     search_terms: pick("search_terms"),
@@ -306,6 +314,7 @@ function fieldPairs(
 ): [ListingField, number | null, string, string][] {
   const pairs: [ListingField, number | null, string, string][] = [
     ["title", null, a.title, b.title],
+    ["item_highlights", null, a.item_highlights, b.item_highlights],
   ];
   const n = Math.max(a.bullets.length, b.bullets.length);
   for (let i = 0; i < n; i++) pairs.push(["bullets", i, a.bullets[i] ?? "", b.bullets[i] ?? ""]);

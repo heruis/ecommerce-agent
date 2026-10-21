@@ -49,6 +49,8 @@ function resolve(f: FormField, a: Parameters<typeof buildPublishFields>[0]): Pub
   switch (f.source.from) {
     case "title":
       return generated(listing.title, "title");
+    case "item_highlights":
+      return generated(listing.item_highlights ?? "", "item_highlights");
     case "description":
       return generated(listing.description, "description");
     case "search_terms":

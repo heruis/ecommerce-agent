@@ -5,6 +5,7 @@ import { repairRules, shorten } from "./repair";
 
 const base: ListingDraft = {
   title: "Silicone Cup",
+  item_highlights: "",
   bullets: ["A", "B", "C", "D", "E"].map((x) => `Point ${x}: a clear sentence about the cup.`),
   description: "A collapsible cup for travel and camping. ".repeat(5),
   search_terms: "foldable mug",

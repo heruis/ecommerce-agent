@@ -16,11 +16,20 @@ export interface ParsedListing {
 }
 
 type Section =
-  "title" | "bullets" | "description" | "search_terms" | "seo_title" | "seo_description" | "tags";
+  | "title"
+  | "item_highlights"
+  | "bullets"
+  | "description"
+  | "search_terms"
+  | "seo_title"
+  | "seo_description"
+  | "tags";
 
 const LABELS: { section: Section; re: RegExp }[] = [
   { section: "title", re: /^(?:product\s+|item\s+)?(?:title|name)\s*[:：]\s*(.*)$/i },
   { section: "title", re: /^(?:标题|商品名称|产品名称)\s*[:：]\s*(.*)$/ },
+  // Amazon's "Item highlights" line; checked before the generic "highlights" bullets label.
+  { section: "item_highlights", re: /^(?:item\s+highlights|商品亮点)\s*[:：]\s*(.*)$/i },
   {
     section: "bullets",
     re: /^(?:about this item|bullet points?|key (?:features|selling points)|selling points|highlights|features|五点描述|卖点|产品卖点)\s*[:：]?\s*(.*)$/i,
@@ -52,6 +61,7 @@ export function parseListingText(raw: string): ParsedListing {
 
   const out: Record<Section, string[]> = {
     title: [],
+    item_highlights: [],
     bullets: [],
     description: [],
     search_terms: [],
@@ -102,6 +112,7 @@ export function parseListingText(raw: string): ParsedListing {
 
   const draft: ListingDraft = {
     title: out.title.join(" ").trim(),
+    item_highlights: out.item_highlights.join(" ").trim(),
     bullets: out.bullets.filter(Boolean),
     description: out.description.join("\n").trim(),
     search_terms: out.search_terms.join(" ").trim(),

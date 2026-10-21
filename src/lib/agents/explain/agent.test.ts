@@ -5,6 +5,7 @@ import { alignExplanation, runExplain, type ExplainInput } from "./agent";
 
 const listing: ListingDraft = {
   title: "Collapsible Silicone Cup",
+  item_highlights: "",
   bullets: ["Folds flat.", "Holds 350 ml."],
   description: "A cup for travel.",
   search_terms: "",

@@ -38,6 +38,27 @@ describe("publish report", () => {
     expect(tiktok.fields.find((f) => f.key === "hashtags")!.value).toMatch(/^#/);
   });
 
+  it("puts Item Highlights in the Amazon form right after the title", async () => {
+    const amazon = channelView(await generated(), "amazon_us")!;
+    const keys = amazon.fields.map((f) => f.key);
+    expect(keys.indexOf("item_highlights")).toBe(keys.indexOf("item_name") + 1);
+    expect(amazon.fields.find((f) => f.key === "item_highlights")!.value).toBe(
+      amazon.listing.item_highlights,
+    );
+  });
+
+  it("still renders and edits reports saved before Item Highlights existed", async () => {
+    const listing = await generated();
+    const amazon = listing.result!.channels.find((c) => c.platform === "amazon_us")!;
+    const old: Partial<typeof amazon.listing> = { ...amazon.listing };
+    delete old.item_highlights;
+    amazon.listing = old as typeof amazon.listing;
+    listing.edited = { amazon_us: old as typeof amazon.listing };
+    const view = channelView(listing, "amazon_us")!;
+    expect(view.listing.item_highlights).toBe("");
+    expect(view.validation.violations.map((v) => v.rule_id)).toContain("item_highlights.missing");
+  });
+
   it("re-checks seller edits instead of trusting them", async () => {
     const listing = await generated();
     const shopify = channelView(listing, "shopify")!;

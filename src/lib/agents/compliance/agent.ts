@@ -186,6 +186,7 @@ export function backstop(
 function renderDraft(d: ListingDraft): string {
   return [
     `title: ${d.title}`,
+    d.item_highlights && `item_highlights: ${d.item_highlights}`,
     ...d.bullets.map((b, i) => `bullet ${i + 1}: ${b}`),
     `description: ${d.description}`,
     d.search_terms && `search_terms: ${d.search_terms}`,

@@ -37,6 +37,7 @@ describe("MemoryRepo (reference behavior for SupabaseRepo)", () => {
     await expect(
       repo.saveEdits(bob.id, listing.id, "amazon_us", {
         title: "x",
+        item_highlights: "",
         bullets: [],
         description: "",
         search_terms: "",

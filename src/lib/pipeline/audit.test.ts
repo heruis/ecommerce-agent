@@ -13,7 +13,8 @@ About this item
 Product description
 This collapsible cup packs flat for travel, camping and hiking. It is easy to rinse and dries quickly.`;
 
-const clean = `Title: Bamboo Utensil Set with Carry Pouch, Reusable Fork Spoon Knife for Travel and Lunch
+const clean = `Title: Bamboo Utensil Set with Carry Pouch, Reusable Fork, Spoon and Knife
+Item highlights: Fork, spoon, knife and chopsticks in a cotton pouch for lunch at work, school or travel
 About this item
 • Includes a fork, spoon, knife and chopsticks in a cotton pouch.
 • Made of natural bamboo with a smooth finish.

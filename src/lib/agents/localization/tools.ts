@@ -18,6 +18,7 @@ export function checkListingTool(platform: Platform, opts: { brand: string; evid
       const report = validateListing(draft, platform, { brand: opts.brand });
       const text = [
         draft.title,
+        draft.item_highlights,
         ...draft.bullets,
         draft.description,
         draft.seo_title,

@@ -77,6 +77,13 @@ export function repairRules(
     note("title", null, `Shortened to ${r.label}'s ${r.title.maxChars}-character limit.`);
   }
 
+  // ---- Amazon Item Highlights ----------------------------------------------
+  let item_highlights = scrub(listing.item_highlights ?? "", "item_highlights", null);
+  if (r.itemHighlights && item_highlights.length > r.itemHighlights.maxChars) {
+    item_highlights = shorten(item_highlights, r.itemHighlights.maxChars);
+    note("item_highlights", null, `Shortened to ${r.itemHighlights.maxChars} characters.`);
+  }
+
   // ---- bullets -----------------------------------------------------------
   const bullets = listing.bullets.map((b, i) => {
     let out = scrub(b, "bullets", i);
@@ -126,7 +133,16 @@ export function repairRules(
   const tags = listing.tags.map((t, i) => scrub(t, "tags", i)).filter(Boolean);
 
   return {
-    listing: { title, bullets, description, search_terms, seo_title, seo_description, tags },
+    listing: {
+      title,
+      item_highlights,
+      bullets,
+      description,
+      search_terms,
+      seo_title,
+      seo_description,
+      tags,
+    },
     notes: dedupeNotes(notes),
   };
 }

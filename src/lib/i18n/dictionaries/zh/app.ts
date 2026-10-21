@@ -245,6 +245,7 @@ export const app: Dictionary["app"] = {
     title: "编辑 {channel} 文案",
     note: "保存后会重新检查平台规则和风险宣称。",
     titleField: "标题",
+    itemHighlights: "商品亮点（Item Highlights）",
     description: "商品描述",
     searchTerms: "后台搜索词",
     searchTermsHint: "{bytes}/{max} 字节 · AI 建议",

@@ -21,6 +21,7 @@ export const TIKTOK_US: PlatformRules = {
     bannedChars: ["$", "^", "{", "}"],
     maxWordRepeats: 2,
   },
+  itemHighlights: null,
   bullets: {
     label: "Key selling points",
     min: 3,

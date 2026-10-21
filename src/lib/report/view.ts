@@ -1,4 +1,11 @@
-import type { ChannelResult, Listing, ListingDraft, Platform, RiskScore } from "@/lib/contracts";
+import {
+  withDraftDefaults,
+  type ChannelResult,
+  type Listing,
+  type ListingDraft,
+  type Platform,
+  type RiskScore,
+} from "@/lib/contracts";
 import { allText } from "@/lib/guardrails/gate";
 import { scanClaims } from "@/lib/guardrails/claims-lexicon";
 import { validateListing } from "@/lib/rules";
@@ -21,8 +28,11 @@ export interface ChannelView extends ChannelResult {
 export function channelViews(listing: Listing): ChannelView[] {
   const r = listing.result;
   if (!r) return [];
-  return r.channels.map((c) => {
-    const edit = listing.edited?.[c.platform];
+  return r.channels.map((stored) => {
+    // Reports saved before a field existed get its default, so every surface can rely on it.
+    const c = { ...stored, listing: withDraftDefaults(stored.listing) };
+    const savedEdit = listing.edited?.[c.platform];
+    const edit = savedEdit ? withDraftDefaults(savedEdit) : undefined;
     const view = edit ? withEdits(listing, c, edit) : { ...c, edited: false };
     return {
       ...view,

@@ -6,6 +6,7 @@ import type {
   ProductInput,
 } from "@/lib/contracts";
 import { toolResultsSoFar, type MockResponder } from "@/lib/harness";
+import { rulesFor } from "@/lib/rules";
 import { usageProfile } from "../shared/use-cases";
 
 /**
@@ -98,13 +99,38 @@ export function buildMockDraft(
     specs ? `Specifications: ${specs}.` : `Versatile Use: Suitable for ${use.list}.`,
   ];
 
-  const empty = { search_terms: "", seo_title: "", seo_description: "", tags: [] as string[] };
+  const empty = {
+    item_highlights: "",
+    search_terms: "",
+    seo_title: "",
+    seo_description: "",
+    tags: [] as string[],
+  };
 
   if (platform === "amazon_us") {
+    const rules = rulesFor("amazon_us");
+    // The final draft keeps the longest title that fits, like the live agent's rewrite.
     const title =
       variant === "first"
         ? `${brand}${type}, ${cap} ${mat} ${titleCase(noun)}, ${titleCase(noun)} for ${use.title}, ${titleCase(noun)} Gift`
-        : `${brand}${type}, ${cap} ${mat} Design for ${use.title}`;
+        : firstThatFits(
+            [
+              `${brand}${type}, ${cap} ${mat} Design for ${use.title}`,
+              `${brand}${type}, ${cap} for ${use.title}`,
+              `${brand}${type}, ${cap} ${mat}`,
+              `${brand}${type}`,
+            ],
+            rules.title.maxChars,
+          );
+    const itemHighlights = joinWithin(
+      [
+        material ? `Made with ${material}` : "",
+        folded ? `folds flat to ${folded.value} ${folded.unit}` : "",
+        temp ? `rated ${temp.value} ${temp.unit}` : "",
+        `made for ${use.list}`,
+      ],
+      rules.itemHighlights?.maxChars ?? 0,
+    );
     const description =
       `This ${facts.product_type} is designed for people who want a practical option at home and on the go. ` +
       `It is made for ${use.list}, and works just as well for everyday use. ` +
@@ -113,6 +139,7 @@ export function buildMockDraft(
     return {
       ...empty,
       title: tidy(title),
+      item_highlights: itemHighlights,
       bullets: benefits,
       description,
       search_terms: backendTerms(title, keywords),
@@ -159,6 +186,7 @@ export function buildMockDraft(
   const tags = [...keywords.primary, ...keywords.secondary].slice(0, 8);
   return {
     title: tidy(title),
+    item_highlights: "",
     bullets: highlights,
     description,
     search_terms: "",
@@ -188,6 +216,19 @@ function tidy(s: string): string {
     .replace(/\s{2,}/g, " ")
     .replace(/ ,/g, ",")
     .trim();
+}
+
+/** The first candidate (most detailed first) that fits the limit; the last one otherwise. */
+function firstThatFits(candidates: string[], max: number): string {
+  const tidied = candidates.map(tidy);
+  return tidied.find((c) => c.length <= max) ?? tidied[tidied.length - 1];
+}
+
+/** Join phrases with commas, dropping trailing phrases until the line fits. */
+function joinWithin(phrases: string[], max: number): string {
+  const parts = phrases.filter(Boolean);
+  while (parts.length > 0 && parts.join(", ").length > max) parts.pop();
+  return parts.join(", ");
 }
 
 function titleCase(s: string): string {

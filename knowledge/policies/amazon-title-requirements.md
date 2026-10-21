@@ -4,14 +4,18 @@ title: Amazon product title requirements
 source_name: Amazon Seller Central Help — Product title requirements
 source_url: https://sellercentral.amazon.com/help/hub/reference/external/GYTR6SYGFA5E3EQC
 platforms: [amazon_us]
-topics: [title, length, characters, promotional, repetition]
+topics: [title, length, characters, promotional, repetition, item highlights]
 verified: false
 last_reviewed: null
 ---
 
 ## Title length
 
-Amazon limits product titles to 200 characters including spaces for most categories; some categories set a lower limit. Long titles are truncated on mobile, so put the product type and the most important attributes first. When a title is too long, rewrite it rather than cutting it off, so no key attribute is lost.
+Since July 27, 2026, Amazon limits product titles to 75 characters including spaces in every category except media (books, music and video); before that the limit was 200. Titles over the limit may be rejected, suppressed from search or rewritten by Amazon. Put the brand, the product type and one or two defining attributes first. When a title is too long, rewrite it rather than cutting it off, and move the details that no longer fit into Item Highlights and the bullet points.
+
+## Item Highlights
+
+Item Highlights is a searchable line of up to 125 characters shown under the title, added alongside the 75-character title limit. Use it for the details the title leaves out, such as material, size or capacity, use cases and what is included. Do not repeat the title, and keep promotional language out of it, as in the title.
 
 ## Special characters in titles
 

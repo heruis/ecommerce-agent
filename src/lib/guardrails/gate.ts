@@ -101,6 +101,7 @@ export function applyGate(args: {
 function mapText(l: ListingDraft, fn: (t: string) => string): ListingDraft {
   return {
     title: fn(l.title),
+    item_highlights: fn(l.item_highlights),
     bullets: l.bullets.map(fn),
     description: fn(l.description),
     search_terms: fn(l.search_terms),
@@ -113,6 +114,7 @@ function mapText(l: ListingDraft, fn: (t: string) => string): ListingDraft {
 export function allText(l: ListingDraft): string {
   return [
     l.title,
+    l.item_highlights,
     ...l.bullets,
     l.description,
     l.search_terms,
