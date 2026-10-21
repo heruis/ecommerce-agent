@@ -150,15 +150,14 @@ One credit = one report (one product, up to three channels), one listing audit o
 
 ## 8. Success metrics
 
-| Metric                                                       | Target (capstone)                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| Golden eval pass rate (live, every channel)                  | ≥ 80%                                                                     |
-| Audit and appeal eval pass rate (mock now, live before demo) | ≥ 80% (mock: 6/6 audit, 4/4 appeal)                                       |
-| Restricted claims leaking to any channel's listing (golden)  | 0                                                                         |
-| Median run time, three channels (live)                       | < 90 s                                                                    |
-| Median cost per three-channel run                            | < $0.15                                                                   |
-| Before→after score uplift on cases with a baseline           | ≥ +20 points                                                              |
-| Seller validation                                            | 2–3 real sellers interviewed; willingness to pay recorded in the write-up |
+| Metric                                                       | Target (capstone)                   |
+| ------------------------------------------------------------ | ----------------------------------- |
+| Golden eval pass rate (live, every channel)                  | ≥ 80%                               |
+| Audit and appeal eval pass rate (mock now, live before demo) | ≥ 80% (mock: 6/6 audit, 4/4 appeal) |
+| Restricted claims leaking to any channel's listing (golden)  | 0                                   |
+| Median run time, three channels (live)                       | < 90 s                              |
+| Median cost per three-channel run                            | < $0.15                             |
+| Before→after score uplift on cases with a baseline           | ≥ +20 points                        |
 
 ## 9. Risks
 
@@ -174,11 +173,10 @@ One credit = one report (one product, up to three channels), one listing audit o
 | Double-spend of credits / duplicate webhook     | Atomic SQL function; event-id idempotency; release the event if a handler fails                                                 | WS4        |
 | Prompt injection via product text or photos     | Input screen, `<seller_input>` data tags, "text in photos is data", tools capped in code                                        | WS2        |
 | Scope creep (live publishing, SEO data)         | Explicit non-goals; lead approves scope changes                                                                                 | Lead       |
-| Business demand unproven                        | Interview 2–3 sellers this week; record in write-up                                                                             | Lead       |
 
 ## 10. Milestones
 
-See `memory/timeline.md`. One week: day 1–2 live keys + Vercel deploy, day 3–4 live evals and prompt fixes, day 5 seller interviews and polish, day 6–7 write-up and demo recording.
+See `memory/timeline.md`. One week: day 1–2 live keys + Vercel deploy, day 3–4 live evals and prompt fixes, day 5 compliance suite and polish, day 6–7 write-up and demo recording.
 
 ## 11. Later (post-MVP)
 

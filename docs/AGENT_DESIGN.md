@@ -49,7 +49,8 @@ Why one localization agent per channel but one compliance review: each channel h
 - **Job:** Chinese text → `ProductFacts` (facts with verbatim source quotes, marketing claims kept separate, missing info).
 - **Tier / effort:** fast / low. **Pattern:** single structured call (`output_config.format` from zod).
 - **Guardrails:** seller text wrapped in `<seller_input>`; _grounding check_ in code downgrades any fact whose quote is not in the input.
-- **Failure modes:** invents specs (caught by grounding check); treats claims as facts (golden `must_flag` cases).
+- **Too thin to write from (D-021):** code (`extraction/sufficiency.ts`) requires a product type plus at least one stated material, size or concrete feature. Otherwise the run stops with `needs_info` (credit refunded) and the seller gets 1–4 questions in English and Chinese; the model only phrases them (`ProductFacts.questions`), and it cannot stop a run that has enough facts.
+- **Failure modes:** invents specs (caught by grounding check); treats claims as facts (golden `must_flag` cases); writes from too little (golden `thin-input-asks-questions`).
 
 ### Keywords — `agents/keywords` (WS1)
 
@@ -82,7 +83,7 @@ Why one localization agent per channel but one compliance review: each channel h
 
 ### Policy gate — `guardrails/gate.ts` (WS2, code)
 
-Runs once per channel. Applies rewrite/remove actions wherever the phrase appears (title, bullets, description, search terms, SEO title and description, tags), then sweeps every field with the lexicon until nothing restricted remains, re-validates that channel's rules, and returns PASS/FAIL plus a needs-review list (e.g. unverified claims the seller must confirm).
+Runs once per channel. Applies rewrite/remove actions wherever the phrase appears (title, Item Highlights, bullets, description, search terms, SEO title and description, tags), then sweeps every field with the lexicon until nothing restricted remains, re-validates that channel's rules (Amazon: 75-character title and 125-character Item Highlights, D-020), and returns PASS/FAIL plus a needs-review list: unverified claims the seller must confirm, and any number that is neither in the seller's text nor a unit conversion of it (number grounding, D-022).
 
 ### Report builder — `report/` (WS1, code)
 
