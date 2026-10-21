@@ -135,7 +135,16 @@ export async function runAudit(
     const gated = await h.stage(
       "output_gate",
       { platform },
-      async () => applyGate({ draft: fix.listing, compliance, platform, brand, evidence }),
+      async () =>
+        applyGate({
+          draft: fix.listing,
+          compliance,
+          platform,
+          brand,
+          evidence,
+          // The fix may only use numbers the seller's own listing and notes contain.
+          source: [input.listing_text, input.notes, evidence].join("\n"),
+        }),
       (r) =>
         r.gate.decision === "pass" ? "PASS" : `FAIL — ${r.gate.needs_review.length} to review`,
     );

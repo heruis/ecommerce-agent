@@ -224,6 +224,13 @@ export async function runPipeline(
             platform: d.platform,
             brand: input.brand,
             evidence: input.evidence,
+            source: [
+              input.title_zh,
+              input.description_zh,
+              input.specs_zh,
+              input.evidence,
+              input.existing_listing_en,
+            ].join("\n"),
           }),
         })),
       (r) =>

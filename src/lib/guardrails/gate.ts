@@ -7,6 +7,7 @@ import type {
 } from "@/lib/contracts";
 import { validateListing } from "@/lib/rules";
 import { scanClaims, stripPhrase } from "./claims-lexicon";
+import { unsupportedNumbers } from "./numbers";
 
 /**
  * Layer 3 — the output policy gate (course Module 4: "the gate that blocks an
@@ -30,6 +31,8 @@ export function applyGate(args: {
   platform: Platform;
   brand: string;
   evidence: string;
+  /** The seller's own text; when given, numbers not found in it are flagged for review. */
+  source?: string;
 }): GateResult {
   const fixes: string[] = [];
   const review: string[] = [];
@@ -81,6 +84,17 @@ export function applyGate(args: {
   const validation = validateListing(listing, args.platform, { brand: args.brand });
   const errors = validation.violations.filter((v) => v.severity === "error");
   for (const e of errors) review.push(e.message);
+
+  // 4. Number grounding: a number the seller never gave may be an invented spec.
+  //    A review item, not a FAIL: unit conversions can be rounded unusually.
+  if (args.source !== undefined) {
+    const invented = unsupportedNumbers(allText(listing), args.source);
+    if (invented.length > 0) {
+      review.push(
+        `Check ${invented.join(", ")}: not in your product information and not a unit conversion of it. Remove it unless it is true.`,
+      );
+    }
+  }
 
   const stillRestricted = scanClaims(allText(listing), args.evidence).filter(
     (h) => h.status === "restricted",
