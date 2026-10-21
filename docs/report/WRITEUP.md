@@ -26,7 +26,7 @@ Chinese small and mid-size sellers list thousands of products on US channels: Am
 
 **Seller journey (the demo).**
 
-1. Sign up with an email code; the dashboard shows 3 free credits.
+1. Sign up and log in; the dashboard shows 3 free credits.
 2. Add test reports to the evidence library; start a new report from the collapsible-cup example.
 3. If the information is too thin ("杯子，质量很好"), ShelfPass stops before writing and asks 1–4 questions in English and Chinese; no credit is used. Otherwise the run streams live: about 30–40 seconds for three channels.
 4. Review the per-channel tabs: "FDA认证" became "made with food-grade silicone" with the FDA source cited, "#1 in the US" was removed, and the Amazon title fits 75 characters with the details moved to Item Highlights.
