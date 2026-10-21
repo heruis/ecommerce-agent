@@ -11,6 +11,7 @@ export const SHOPIFY: PlatformRules = {
   style:
     "Brand voice for your own store. A clear product title, three to five highlights, and a longer description that tells shoppers how they will use it. The SEO title and meta description target one main search phrase each for Google.",
   title: { maxChars: 255, recommendedMaxChars: 70, bannedChars: [], maxWordRepeats: 2 },
+  itemHighlights: null,
   bullets: { label: "Highlights", min: 3, expected: 5, maxChars: 200, recommendedMaxChars: 140 },
   description: { minChars: 300, maxChars: 5000 },
   searchTerms: null,

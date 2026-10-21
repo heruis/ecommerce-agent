@@ -43,18 +43,18 @@ _Previews are illustrative marketplace-style pages, not affiliated with Amazon, 
 
 ChatGPT translates "FDA认证" into "FDA Approved", which is a misleading claim on a US listing. ShelfPass adds what a chat window doesn't have:
 
-|                                                                            | ChatGPT    | ShelfPass                                                                                                        |
-| -------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| Platform rules (200-char titles, banned characters, 249-byte search terms) | —          | One rule engine per channel that the agent must pass, rewriting rather than truncating                           |
-| Each site's own form                                                       | —          | Every field of the Amazon / TikTok Shop / Shopify "add product" form, in order, with copy buttons                |
-| Photos                                                                     | —          | Main-image check per channel (measured white background, text, watermark, fill) plus a shot list                 |
-| Claim verification                                                         | —          | Each claim marked verified, unverified or restricted, with a policy citation and a suggested fix                 |
-| Safety net                                                                 | —          | Deterministic lexicon and an output policy gate: restricted phrases cannot reach the final listing               |
-| Evidence                                                                   | —          | A document library; a claim stays only when a document the seller holds backs it                                 |
-| A listing that is already live                                             | —          | Audit: findings with citations, the smallest fix (untouched fields stay identical), risk before → after          |
-| A takedown notice                                                          | —          | Cause, fix steps, documents to gather and an English appeal letter, citing only policies it actually retrieved   |
-| Quality and risk you can measure                                           | —          | 0–100 quality score (rules + LLM judge) and 0–100 takedown-risk score (code), before vs after                    |
-| Workflow                                                                   | copy-paste | Edit per channel with re-check, previews, printable report, CSV/TXT/JSON/MD export, history, full trace, 中文 UI |
+|                                                                           | ChatGPT    | ShelfPass                                                                                                        |
+| ------------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
+| Platform rules (75-char titles, banned characters, 249-byte search terms) | —          | One rule engine per channel that the agent must pass, rewriting rather than truncating                           |
+| Each site's own form                                                      | —          | Every field of the Amazon / TikTok Shop / Shopify "add product" form, in order, with copy buttons                |
+| Photos                                                                    | —          | Main-image check per channel (measured white background, text, watermark, fill) plus a shot list                 |
+| Claim verification                                                        | —          | Each claim marked verified, unverified or restricted, with a policy citation and a suggested fix                 |
+| Safety net                                                                | —          | Deterministic lexicon and an output policy gate: restricted phrases cannot reach the final listing               |
+| Evidence                                                                  | —          | A document library; a claim stays only when a document the seller holds backs it                                 |
+| A listing that is already live                                            | —          | Audit: findings with citations, the smallest fix (untouched fields stay identical), risk before → after          |
+| A takedown notice                                                         | —          | Cause, fix steps, documents to gather and an English appeal letter, citing only policies it actually retrieved   |
+| Quality and risk you can measure                                          | —          | 0–100 quality score (rules + LLM judge) and 0–100 takedown-risk score (code), before vs after                    |
+| Workflow                                                                  | copy-paste | Edit per channel with re-check, previews, printable report, CSV/TXT/JSON/MD export, history, full trace, 中文 UI |
 
 ## How it works
 

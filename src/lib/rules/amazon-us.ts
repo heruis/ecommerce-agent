@@ -5,18 +5,21 @@ export const AMAZON_US: PlatformRules = {
   label: "Amazon US",
   sources: [
     "Amazon Seller Central Help: Product title requirements",
+    "Amazon Seller Forums announcement: 75-character titles and Item Highlights, effective 2026-07-27 (TODO(WS2): confirm Item Highlights rules in Seller Central)",
     "Amazon Seller Central Help: Product detail page rules",
     "Amazon Seller Central Help: Use search terms effectively",
     "Amazon Seller Central Help: Product image requirements",
   ],
   style:
-    "Search-driven and factual. Title leads with brand and product type, then key attributes. Five scannable bullets, each one benefit backed by a fact. Backend search terms carry synonyms that are not visible.",
+    "Search-driven and factual. Titles are capped at 75 characters (since July 27, 2026), so the title is brand, product type and one or two defining attributes; Item Highlights carries the next most useful details. Five scannable bullets, each one benefit backed by a fact. Backend search terms carry synonyms that are not visible.",
+  // 75 characters including spaces, all categories except media (books, music,
+  // video), which ShelfPass does not cover.
   title: {
-    maxChars: 200,
-    recommendedMaxChars: 150,
+    maxChars: 75,
     bannedChars: ["!", "$", "?", "_", "{", "}", "^", "¬", "¦"],
     maxWordRepeats: 2,
   },
+  itemHighlights: { maxChars: 125 },
   bullets: { label: "Bullet points", min: 5, expected: 5, maxChars: 500, recommendedMaxChars: 255 },
   description: { minChars: 150, maxChars: 2000 },
   searchTerms: {
@@ -58,7 +61,20 @@ export const AMAZON_US: PlatformRules = {
       source: { from: "product_type" },
       note: "Pick the closest Amazon product type in Add a Product",
     },
-    { key: "item_name", label: "Item name (title)", required: true, source: { from: "title" } },
+    {
+      key: "item_name",
+      label: "Item name (title)",
+      required: true,
+      source: { from: "title" },
+      note: "75 characters at most, including spaces",
+    },
+    {
+      key: "item_highlights",
+      label: "Item highlights",
+      required: false,
+      source: { from: "item_highlights" },
+      note: "Up to 125 characters, shown under the title and searchable",
+    },
     {
       key: "brand",
       label: "Brand name",

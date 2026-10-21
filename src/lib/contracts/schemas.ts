@@ -32,6 +32,7 @@ export type Category = z.infer<typeof Category>;
 
 export const LISTING_FIELDS = [
   "title",
+  "item_highlights",
   "bullets",
   "description",
   "search_terms",
@@ -167,11 +168,15 @@ export type KeywordSet = z.infer<typeof KeywordSet>;
 
 /**
  * One listing for one marketplace. Fields a platform does not use stay empty
- * ("" or []): search_terms is Amazon's backend keywords, seo_* are Shopify's
- * search-engine listing, tags are Shopify tags or TikTok hashtags.
+ * ("" or []): item_highlights and search_terms are Amazon-only, seo_* are
+ * Shopify's search-engine listing, tags are Shopify tags or TikTok hashtags.
  */
 export const ListingDraft = z.object({
   title: z.string(),
+  item_highlights: z
+    .string()
+    .default("")
+    .describe("Amazon Item Highlights: one searchable line under the title; empty elsewhere"),
   bullets: z
     .array(z.string())
     .describe("Amazon bullet points / TikTok selling points / Shopify highlights"),
@@ -188,6 +193,15 @@ export const ListingDraft = z.object({
     .describe("Shopify tags or TikTok hashtags; empty for Amazon"),
 });
 export type ListingDraft = z.infer<typeof ListingDraft>;
+
+/**
+ * Fill in fields added after a draft was stored (item_highlights arrived with
+ * Amazon's 75-character titles), so reports saved earlier still render and edit.
+ */
+export function withDraftDefaults(draft: ListingDraft): ListingDraft {
+  const parsed = ListingDraft.safeParse(draft);
+  return parsed.success ? parsed.data : draft;
+}
 
 // ---------------------------------------------------------------------------
 // 5a. Deterministic platform rule checks

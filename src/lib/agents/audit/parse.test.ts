@@ -19,6 +19,16 @@ Search terms: foldable mug camping`);
     expect(draft.search_terms).toBe("foldable mug camping");
   });
 
+  it("reads Amazon's Item highlights line apart from the bullets", () => {
+    const { draft } = parseListingText(`Title: Silicone Cup, 350 ml
+Item highlights: Folds flat to 3 cm, lid included, for camping and travel
+About this item
+• Holds 350 ml
+• Food-grade silicone`);
+    expect(draft.item_highlights).toBe("Folds flat to 3 cm, lid included, for camping and travel");
+    expect(draft.bullets).toEqual(["Holds 350 ml", "Food-grade silicone"]);
+  });
+
   it("reads an unlabeled paste: first line title, marked lines bullets", () => {
     const { draft } = parseListingText(`Bamboo Cutting Board, Extra Thick
 - Antibacterial bamboo surface

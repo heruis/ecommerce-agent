@@ -101,6 +101,9 @@ export function AmazonPreview({
               <h3 className="text-[17px] font-normal leading-tight @3xl:text-[19px]">
                 {listing.title}
               </h3>
+              {listing.item_highlights ? (
+                <p className="text-[13px] text-slate-700">{listing.item_highlights}</p>
+              ) : null}
               {brand ? <p className="text-[12px] text-sky-700">Visit the {brand} Store</p> : null}
               <div className="flex items-center gap-2 text-[12px]">
                 <span className="rounded-sm bg-slate-800 px-1.5 py-0.5 text-[11px] font-bold text-white">

@@ -5,6 +5,7 @@ import { computeScore, parseExistingListing, WEIGHTS } from "./score";
 
 const listing: ListingDraft = {
   title: "Collapsible Silicone Cup, 350 ml Travel Cup",
+  item_highlights: "",
   bullets: [
     "Material: Food-grade silicone.",
     "Capacity: 350 ml.",

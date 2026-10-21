@@ -27,6 +27,7 @@ const facts: ProductFacts = {
 
 const draft: ListingDraft = {
   title: "TPE Yoga Mat, Non-Slip, 183 x 61 cm",
+  item_highlights: "",
   bullets: ["Non-Slip: Textured surface for yoga and Pilates."],
   description: "A thick TPE yoga mat for home workouts.",
   search_terms: "",

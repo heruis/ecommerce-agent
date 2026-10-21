@@ -5,6 +5,7 @@ import { computeRisk, riskLevel } from "./risk";
 
 const clean: ListingDraft = {
   title: "Collapsible Silicone Cup, 350 ml Travel Cup with Lid for Camping and Hiking",
+  item_highlights: "",
   bullets: [
     "Folds Flat: Collapses to about 3 cm so it fits in a pocket.",
     "Right-Sized: Holds 350 ml of water, coffee or tea.",

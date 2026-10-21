@@ -46,6 +46,7 @@ export function complianceCandidates(
   for (const draft of drafts) {
     const fields: [ListingField, string][] = [
       ["title", draft.title],
+      ["item_highlights", draft.item_highlights],
       ["bullets", draft.bullets.join("\n")],
       ["description", draft.description],
       ["search_terms", draft.search_terms],

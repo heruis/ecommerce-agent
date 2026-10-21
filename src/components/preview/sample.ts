@@ -4,8 +4,8 @@ import type { ListingDraft } from "@/lib/contracts";
  * Demo data: what ShelfPass produces for the collapsible-cup example (the
  * same supplier text as the "Collapsible silicone cup" example on the new
  * report form). Based on a pipeline run, lightly edited for the marketing
- * pages. Every channel passes its own rule check: Amazon title under 200
- * characters with 5 bullets, TikTok Shop hashtags, Shopify SEO fields within
+ * pages. Every channel passes its own rule check: Amazon title within 75
+ * characters plus Item Highlights and 5 bullets, TikTok Shop hashtags, Shopify SEO fields within
  * Google's display lengths, and no restricted claims.
  */
 
@@ -34,8 +34,9 @@ export const SAMPLE_IMAGES = [
 ];
 
 export const SAMPLE_AMAZON: ListingDraft = {
-  title:
-    "TrailFold Collapsible Silicone Cup with Lid, 350 ml Food-Grade Travel Cup, Folds Flat to 3 cm for Camping, Hiking and Backpacking",
+  title: "TrailFold Collapsible Silicone Cup with Lid, 350 ml, Folds Flat to 3 cm",
+  item_highlights:
+    "Food-grade travel cup with lanyard for camping, hiking and backpacking; handles drinks from -40 to 200 °C",
   bullets: [
     "Folds Flat to 3 cm: Collapses from 11 cm tall to about 3 cm, so it slips into a pocket, purse or backpack side pocket.",
     "Food-Grade Silicone: Made with soft, flexible food-grade silicone that pops back into shape and rinses clean in seconds.",
@@ -54,6 +55,7 @@ export const SAMPLE_AMAZON: ListingDraft = {
 
 export const SAMPLE_TIKTOK: ListingDraft = {
   title: "TrailFold Collapsible Silicone Cup 350 ml, Folds Flat to 3 cm for Travel & Camping",
+  item_highlights: "",
   bullets: [
     "Folds flat to 3 cm: fits any pocket",
     "Food-grade silicone, easy to rinse",
@@ -70,6 +72,7 @@ export const SAMPLE_TIKTOK: ListingDraft = {
 
 export const SAMPLE_SHOPIFY: ListingDraft = {
   title: "TrailFold Collapsible Silicone Cup – 350 ml",
+  item_highlights: "",
   bullets: [
     "Folds flat to about 3 cm",
     "Food-grade silicone, easy to rinse",

@@ -4,6 +4,7 @@ import { applyGate, replaceCaseAware } from "./gate";
 
 const draft: ListingDraft = {
   title: "Collapsible Silicone Cup, 350 ml Travel Cup for Camping and Hiking",
+  item_highlights: "",
   bullets: [
     "FDA Approved Material: Made with food-grade silicone.",
     "Folds Flat: Collapses to 3 cm.",

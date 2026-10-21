@@ -11,6 +11,9 @@ export function localizationSystem(platform: Platform): string {
   const r = rulesFor(platform);
   const fieldRules: string[] = [
     `- title: at most ${r.title.maxChars} characters${r.title.recommendedMaxChars ? ` (aim for ${r.title.recommendedMinChars ? `${r.title.recommendedMinChars}–` : "under "}${r.title.recommendedMaxChars})` : ""}. Most important words first.${r.title.bannedChars.length ? ` No ${r.title.bannedChars.join(" ")} characters.` : ""} No word more than ${r.title.maxWordRepeats} times, no ALL CAPS.`,
+    r.itemHighlights
+      ? `- item_highlights: one line of at most ${r.itemHighlights.maxChars} characters, shown under the title and indexed for search. Add the details the title leaves out (material, size or capacity, use cases, what's included) as short comma-separated phrases. Do not repeat the title.`
+      : `- item_highlights: leave empty ("").`,
     `- bullets (${r.bullets.label}): ${r.bullets.min === r.bullets.expected ? `exactly ${r.bullets.expected}` : `${r.bullets.min}–${r.bullets.expected}`}. Start each with a short capitalized benefit phrase and a colon, then the supporting fact. Aim for under ${r.bullets.recommendedMaxChars} characters each (hard limit ${r.bullets.maxChars}).`,
     `- description: ${r.description.minChars}–${r.description.maxChars} characters of plain text (no HTML). Explain use cases, materials, size and care.`,
     r.searchTerms

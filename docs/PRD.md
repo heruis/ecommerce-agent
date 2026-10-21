@@ -16,7 +16,7 @@ _Turn Chinese product information into one compliance-reviewed report with publi
 
 Chinese small and mid-size sellers list thousands of products on US channels: Amazon, TikTok Shop and their own Shopify stores. Their source material is Chinese supplier copy written for a domestic audience: literal translation produces awkward English, and the copy is full of claims that are normal in China but risky in the US — "FDA认证" (FDA certified), "100%安全" (100% safe), "美国销量第一" (#1 seller in the US), "抗菌" (antibacterial), "环保可降解" (eco-friendly, biodegradable).
 
-Each channel also asks for different things. Amazon wants a 200-character title, 5 bullets and 249 bytes of hidden search terms. TikTok Shop wants a short title, selling points and hashtags for videos. Shopify wants a product page plus an SEO title and meta description for Google. Each has its own main-image rules.
+Each channel also asks for different things. Amazon wants a title of at most 75 characters (since July 27, 2026), a 125-character Item Highlights line, 5 bullets and 249 bytes of hidden search terms. TikTok Shop wants a short title, selling points and hashtags for videos. Shopify wants a product page plus an SEO title and meta description for Google. Each has its own main-image rules.
 
 Today a seller either:
 

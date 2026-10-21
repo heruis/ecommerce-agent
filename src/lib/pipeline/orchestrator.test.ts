@@ -45,9 +45,15 @@ describe("runPipeline (mock mode)", () => {
     expect(
       r.compliance.claims.filter((c) => c.status === "restricted").length,
     ).toBeGreaterThanOrEqual(3);
-    // TikTok gets hashtags, Shopify gets SEO fields, Amazon gets backend search terms.
+    // TikTok gets hashtags, Shopify gets SEO fields, Amazon gets backend search
+    // terms and Item Highlights under a title of at most 75 characters.
     const by = Object.fromEntries(r.channels.map((c) => [c.platform, c.listing]));
     expect(by.amazon_us.search_terms).not.toBe("");
+    expect(by.amazon_us.title.length).toBeLessThanOrEqual(75);
+    expect(by.amazon_us.item_highlights).not.toBe("");
+    expect(by.amazon_us.item_highlights.length).toBeLessThanOrEqual(125);
+    expect(by.tiktok_us.item_highlights).toBe("");
+    expect(by.shopify.item_highlights).toBe("");
     expect(by.tiktok_us.tags.length).toBeGreaterThan(2);
     expect(by.shopify.seo_title).not.toBe("");
     expect(r.images.analysis).toBeNull();

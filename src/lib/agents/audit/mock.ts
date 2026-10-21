@@ -47,7 +47,13 @@ export function mockAuditFix(args: {
       notes.push({ field: "bullets", index: i, reason });
       return apply(b);
     });
-    for (const field of ["description", "search_terms", "seo_title", "seo_description"] as const) {
+    for (const field of [
+      "item_highlights",
+      "description",
+      "search_terms",
+      "seo_title",
+      "seo_description",
+    ] as const) {
       if (has(listing[field])) {
         listing = { ...listing, [field]: apply(listing[field]) };
         notes.push({ field, index: null, reason });

@@ -70,6 +70,7 @@ export const tools: Dictionary["tools"] = {
   },
   fields: {
     title: "标题",
+    item_highlights: "商品亮点",
     bullet: "第 {n} 条五点描述",
     bullets: "五点描述",
     description: "商品描述",

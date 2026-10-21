@@ -167,9 +167,9 @@ function formatCompliance(v: ValidationReport): ScoreComponent {
   };
 }
 
-/** The shopper-visible copy: title, bullets and description. */
+/** The shopper-visible copy: title, Item Highlights, bullets and description. */
 export function listingText(l: ListingDraft): string {
-  return [l.title, ...l.bullets, l.description].join("\n");
+  return [l.title, l.item_highlights, ...l.bullets, l.description].filter(Boolean).join("\n");
 }
 
 /** Fields search engines index but shoppers rarely read: backend terms, SEO meta, tags. */
@@ -209,6 +209,7 @@ export function parseExistingListing(text: string): ListingDraft {
     .join(" ");
   return {
     title,
+    item_highlights: "",
     bullets,
     description,
     search_terms: "",

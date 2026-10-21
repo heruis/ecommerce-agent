@@ -159,6 +159,7 @@ export function untouchedChanged(r: AuditResult): string[] {
     JSON.stringify(r.original[k]) === JSON.stringify(r.fixed[k]);
   for (const k of [
     "title",
+    "item_highlights",
     "description",
     "search_terms",
     "seo_title",
