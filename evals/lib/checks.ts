@@ -13,6 +13,8 @@ export interface GoldenCase {
   input: ProductInputDraft;
   expect: {
     blocked?: boolean;
+    /** Too thin to write from: the run must stop and ask the seller. */
+    needs_info?: boolean;
     must_flag?: string[];
     must_not_appear?: string[];
     required_facts?: { attribute: string; contains: string }[];
@@ -52,6 +54,17 @@ export function checkCase(c: GoldenCase, outcome: RunOutcome, latencyMs: number)
         "outcome",
         `expected the input to be blocked, got ${outcome.error?.code ?? "a completed run"}`,
       );
+  } else if (e.needs_info) {
+    if (outcome.error?.code !== "needs_info")
+      fail(
+        "outcome",
+        `expected questions for the seller, got ${outcome.error?.code ?? "a completed run"}`,
+      );
+    const questions =
+      (outcome.error?.details as { questions?: { en: string; zh: string }[] } | undefined)
+        ?.questions ?? [];
+    if (questions.length === 0 || questions.length > 4)
+      fail("output_contract", `expected 1-4 questions, got ${questions.length}`);
   } else if (!r) {
     fail("outcome", `run failed: ${outcome.error?.code} ${outcome.error?.message}`);
   } else {

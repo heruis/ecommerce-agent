@@ -131,6 +131,13 @@ export const SourceClaim = z.object({
 });
 export type SourceClaim = z.infer<typeof SourceClaim>;
 
+/** A question for the seller when the input is too thin to write a listing. */
+export const ClarifyingQuestion = z.object({
+  en: z.string().describe("The question in English"),
+  zh: z.string().describe("The same question in Simplified Chinese"),
+});
+export type ClarifyingQuestion = z.infer<typeof ClarifyingQuestion>;
+
 export const ProductFacts = z.object({
   product_type: z.string().describe("Short English product type, e.g. collapsible silicone cup"),
   category: Category,
@@ -139,6 +146,12 @@ export const ProductFacts = z.object({
   missing_info: z
     .array(z.string())
     .describe("Important buyer-facing details the seller did not provide"),
+  questions: z
+    .array(ClarifyingQuestion)
+    .default([])
+    .describe(
+      "1-4 questions when the input is too thin to write a listing (product unclear, or no material, size and concrete feature); empty otherwise",
+    ),
 });
 export type ProductFacts = z.infer<typeof ProductFacts>;
 

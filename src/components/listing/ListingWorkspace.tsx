@@ -4,7 +4,7 @@ import { Download, FileJson, Printer, RefreshCw, ScrollText, Sparkles } from "lu
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { Listing, PipelineEvent, Platform } from "@/lib/contracts";
+import type { ClarifyingQuestion, Listing, PipelineEvent, Platform } from "@/lib/contracts";
 import { fmt } from "@/lib/i18n";
 import { useT } from "@/lib/i18n/client";
 import type { ChannelView } from "@/lib/report";
@@ -15,6 +15,7 @@ import { ChannelReport } from "./ChannelReport";
 import { CompliancePanel } from "./CompliancePanel";
 import { KeywordsCard } from "./KeywordsCard";
 import { ListingEditor } from "./ListingEditor";
+import { NeedsInfoCard } from "./NeedsInfoCard";
 import { PhotosCard } from "./PhotosCard";
 import { RunProgress } from "./RunProgress";
 import { ScoreCard } from "./ScoreCard";
@@ -37,7 +38,11 @@ export function ListingWorkspace({
   const router = useRouter();
   const [events, setEvents] = useState<PipelineEvent[]>([]);
   const [running, setRunning] = useState(false);
-  const [error, setError] = useState<{ message: string; code: string } | null>(null);
+  const [error, setError] = useState<{
+    message: string;
+    code: string;
+    questions?: ClarifyingQuestion[];
+  } | null>(null);
   const started = useRef(false);
 
   async function run() {
@@ -68,7 +73,8 @@ export function ListingWorkspace({
         if (!line) continue;
         const event = JSON.parse(line.slice(6)) as PipelineEvent;
         setEvents((prev) => [...prev, event]);
-        if (event.type === "run_failed") setError({ message: event.error, code: event.code });
+        if (event.type === "run_failed")
+          setError({ message: event.error, code: event.code, questions: event.questions });
       }
     }
     setRunning(false);
@@ -93,7 +99,9 @@ export function ListingWorkspace({
     <div className="space-y-6">
       {(running || events.length > 0) && !result ? <RunProgress events={events} /> : null}
 
-      {error ? (
+      {error?.code === "needs_info" && error.questions?.length ? (
+        <NeedsInfoCard input={listing.input} questions={error.questions} />
+      ) : error ? (
         <Alert tone="danger" title={error.message}>
           {error.code === "out_of_credits" ? (
             <Link href="/pricing" className="font-medium text-brand underline">
@@ -105,7 +113,7 @@ export function ListingWorkspace({
         </Alert>
       ) : null}
 
-      {!result && !running ? (
+      {!result && !running && error?.code !== "needs_info" ? (
         <Card className="flex flex-wrap items-center justify-between gap-4">
           <p className="text-sm text-muted">{t.notGenerated}</p>
           <Button variant="accent" onClick={run}>

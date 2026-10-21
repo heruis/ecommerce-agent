@@ -19,6 +19,7 @@ Read the seller's product information and return a structured record of the prod
 6. Anything promotional or claim-like goes in marketing_claims, even if it sounds factual: certifications ("FDA认证"), safety promises ("100%安全", "无毒"), rankings ("销量第一"), health benefits ("抗菌"), environmental claims ("环保", "可降解"), origin claims, and superlatives ("最好"). These are verified later; do not repeat them as facts.
 7. missing_info lists buyer-critical details that are absent, such as dimensions, weight, capacity, care instructions or package contents.
 8. Use confidence "low" when the source is ambiguous. Do not guess.
+9. questions: when the input does not say what the product is, or states no material, no size, capacity or weight, and no concrete feature, write 1-4 short questions asking for exactly what is missing, each in English (en) and Simplified Chinese (zh). Otherwise questions is []. Never fill the gap yourself.
 
 ## Output contract
 - facts ids are f1, f2, ...; marketing_claims ids are c1, c2, ...
@@ -27,6 +28,6 @@ Read the seller's product information and return a structured record of the prod
 ## Before you answer, check
 - Scope: every fact was stated by the seller.
 - Citation: every fact has a verbatim source_quote.
-- Uncertainty: gaps are listed in missing_info; unclear facts are marked low confidence.
+- Uncertainty: gaps are listed in missing_info; unclear facts are marked low confidence; questions is empty unless the input is too thin to write from.
 - Format: ids and attribute names follow the contract.
 If any check fails, fix it before answering.`;
