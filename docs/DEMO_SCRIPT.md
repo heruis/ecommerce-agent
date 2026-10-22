@@ -24,9 +24,9 @@ Speakers follow the workstreams: **Speaker 1** lead · **Speaker 2** WS3 product
 
 **Speaker 1 · Lead (0:00–1:15)**
 
-- _Slide 1._ Hi, we're Team 9, and this is ShelfPass, 上架通. Chinese sellers list thousands of products on Amazon, TikTok Shop and Shopify. ShelfPass takes the Chinese supplier note they already have and turns it into listings for every channel that they can publish today. On the right: supplier copy on top, the Amazon-ready listing below.
+- _Slide 1._ Hi, we're Team 9, and this is ShelfPass, 上架通. Chinese sellers list thousands of products on Amazon, TikTok Shop and Shopify. ShelfPass takes the Chinese supplier note they already have and turns it into listings for every channel that they can publish today. 
 - _Slide 2._ Here's the problem. Supplier copy is written for Chinese shoppers. Translated literally, FDA认证 becomes "FDA certified", 100%安全 becomes "100% safe", 美国销量第一 becomes "#1 in the US". The FDA doesn't certify cups, and none of these can be proven. These are exactly the phrases that get listings removed. And every channel wants different fields. Amazon even changed its rules during our course: since July 27, titles are capped at 75 characters.
-- _Slide 3._ Our user owns a small seller in Shenzhen or Yiwu, with hundreds of SKUs on three channels. AI is the right tool because the job is reading Chinese, writing natural English and judging claims. But ChatGPT alone writes "FDA Approved". So in ShelfPass, models write and code enforces. → _Speaker 2_
+- _Slide 3._ Our user owns a small seller in Shenzhen or Yiwu, with hundreds of SKUs on three channels. We start with Chinese sellers because they’re one of the largest groups on US marketplaces, and their supplier copy breaks US rules in the same predictable ways. AI is the right tool because the job is reading Chinese, writing natural English and judging claims. But ChatGPT alone writes "FDA Approved". So in ShelfPass, models write and code enforces. → _Speaker 2_
 
 **Speaker 2 · WS3 Product UI (1:15–3:00)**
 
